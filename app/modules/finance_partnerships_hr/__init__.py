@@ -1,0 +1,3 @@
+"""
+Finance, Partnerships & HR module
+"""
