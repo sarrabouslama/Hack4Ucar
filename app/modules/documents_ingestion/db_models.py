@@ -1,9 +1,8 @@
-"""
-Database models for documents ingestion
-"""
+"""Database models for documents ingestion"""
 
-from sqlalchemy import Column, String, Integer, Text, Enum
 import enum
+
+from sqlalchemy import Column, Integer, String, Text
 
 from app.core.models import BaseModel
 
@@ -26,4 +25,7 @@ class Document(BaseModel):
     size = Column(Integer, nullable=False)
     status = Column(String(50), default=DocumentStatus.PENDING, nullable=False)
     extracted_data = Column(Text, nullable=True)
+    extracted_text = Column(Text, nullable=True)
+    parser_name = Column(String(100), nullable=True)
+    error_message = Column(Text, nullable=True)
     file_path = Column(String(500), nullable=True)

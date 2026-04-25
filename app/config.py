@@ -1,10 +1,8 @@
-"""
-Configuration management
-"""
+"""Configuration management."""
 
-import json
-from typing import List
+from typing import Any, List
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -26,6 +24,21 @@ class Settings(BaseSettings):
 
     # API settings
     API_V1_PREFIX: str
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def normalize_debug(cls, value: Any) -> bool:
+        """Accept common environment-style debug strings."""
+
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"1", "true", "yes", "on", "debug", "development"}:
+                return True
+            if normalized in {"0", "false", "no", "off", "release", "production"}:
+                return False
+        return bool(value)
 
     class Config:
         env_file = ".env"

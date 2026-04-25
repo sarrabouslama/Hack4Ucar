@@ -36,17 +36,16 @@ app.include_router(finance_router, prefix="/api/v1/finance", tags=["finance"])
 app.include_router(environment_router, prefix="/api/v1/environment", tags=["environment"])
 app.include_router(chatbot_router, prefix="/api/v1/chatbot", tags=["chatbot"])
 
-
 @app.on_event("startup")
 async def startup_event():
     """Initialize database connection on startup"""
     try:
         await db.connect()
-        print("✓ Application startup complete")
+        db.create_documents_table()
+        print("Application startup complete")
     except Exception as e:
-        print(f"✗ Startup error: {e}")
+        print(f"Startup error: {e}")
         raise
-
 
 @app.on_event("shutdown")
 async def shutdown_event():
