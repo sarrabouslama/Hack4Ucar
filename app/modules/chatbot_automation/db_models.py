@@ -84,3 +84,18 @@ class Orchestration(BaseModel):
     status = Column(String(50), default="inactive", nullable=False)
     last_executed = Column(DateTime, nullable=True)
     next_scheduled = Column(DateTime, nullable=True)
+
+
+class MailLog(BaseModel):
+    """Mail logs for automated workflows"""
+
+    __tablename__ = "mail_logs"
+
+    anomaly_type = Column(String(100), nullable=False)  # e.g., dropout_rate
+    anomaly_details = Column(JSON, nullable=False)
+    recipient_email = Column(String(255), nullable=False)
+    subject = Column(String(255), nullable=True)
+    body_plan = Column(Text, nullable=True)  # Proposed draft
+    status = Column(String(50), default="proposed", nullable=False)  # proposed, confirmed, sent, failed
+    sent_at = Column(DateTime, nullable=True)
+    error_message = Column(Text, nullable=True)

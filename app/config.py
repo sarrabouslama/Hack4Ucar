@@ -31,6 +31,17 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-2.5-flash"
 
+    # Celery settings
+    @property
+    def CELERY_BROKER_URL(self) -> str:
+        """Use SQLAlchemy transport for Postgres broker."""
+        return self.DATABASE_URL.replace("postgresql://", "sqla+postgresql://")
+
+    @property
+    def CELERY_RESULT_BACKEND(self) -> str:
+        """Use Database backend for Postgres results."""
+        return self.DATABASE_URL.replace("postgresql://", "db+postgresql://")
+
     @field_validator("DEBUG", mode="before")
     @classmethod
     def normalize_debug(cls, value: Any) -> bool:

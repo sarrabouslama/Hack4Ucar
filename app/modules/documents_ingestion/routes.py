@@ -65,3 +65,18 @@ async def get_document(document_id: UUID, db: Session = Depends(get_db)):
     """Fetch one document by id."""
 
     return _serialize(documents_service.get_document(db, document_id))
+
+
+@router.get("/search", response_model=DocumentListResponse)
+async def search_documents(
+    query: str, 
+    limit: int = 5, 
+    doc_type: str = None, 
+    db: Session = Depends(get_db)
+):
+    """
+    Search documents using hybrid semantic + full-text search.
+    """
+    results = await documents_service.hybrid_search(db, query, limit=limit, doc_type=doc_type)
+    items = [_serialize(document) for document in results]
+    return DocumentListResponse(items=items)

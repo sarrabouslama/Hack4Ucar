@@ -1,6 +1,6 @@
 """API routes for chatbot and automation."""
 
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -46,3 +46,33 @@ async def get_chat_session(session_id: UUID, db: Session = Depends(get_db)):
 async def delete_chat_session(session_id: UUID, db: Session = Depends(get_db)):
     """Soft-delete (end) a chat session."""
     chatbot_service.end_session(db, session_id)
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Automation & Mailing Routes
+# ──────────────────────────────────────────────────────────────────────────
+
+@router.get("/mail-logs")
+async def list_mail_logs(status: Optional[str] = None, db: Session = Depends(get_db)):
+    """List all detected anomalies and mail logs."""
+    return chatbot_service.list_mail_logs(db, status)
+
+
+@router.post("/detect-anomalies")
+async def detect_anomalies(db: Session = Depends(get_db)):
+    """Trigger the anomaly detection workflow."""
+    message = await chatbot_service.run_detection(db)
+    return {"message": message}
+
+
+@router.post("/propose-draft/{mail_log_id}")
+async def propose_draft(mail_log_id: UUID, db: Session = Depends(get_db)):
+    """Generate an AI draft for a mail log."""
+    return await chatbot_service.propose_email_draft(db, mail_log_id)
+
+
+@router.post("/confirm-send/{mail_log_id}")
+async def confirm_send(mail_log_id: UUID, db: Session = Depends(get_db)):
+    """Confirm and send the email via background task."""
+    message = chatbot_service.confirm_and_send(db, mail_log_id)
+    return {"message": message}

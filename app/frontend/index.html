@@ -166,6 +166,43 @@
             border-radius: 2px;
         }
 
+        /* Nav links */
+        .nav-links {
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: var(--radius-md);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 13.5px;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .nav-item:hover {
+            color: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .nav-item.active {
+            color: var(--gold-light);
+            background: rgba(201, 168, 76, 0.1);
+        }
+
+        .nav-item svg {
+            width: 16px;
+            height: 16px;
+        }
+
         .session-card {
             padding: 9px 12px;
             border-radius: var(--radius-md);
@@ -1023,6 +1060,21 @@
                 New conversation
             </button>
 
+            <div class="nav-links">
+                <div class="nav-item active" id="nav-chat" onclick="switchView('chat')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Assistant
+                </div>
+                <div class="nav-item" id="nav-automation" onclick="switchView('automation')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    Automation
+                </div>
+                <div class="nav-item" id="nav-search" onclick="switchView('search')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Search
+                </div>
+            </div>
+
             <div class="section-label">Conversations</div>
 
             <div class="sessions" id="sessions-list">
@@ -1054,16 +1106,16 @@
             </div>
 
             <!-- Messages -->
-            <div class="messages" id="messages"></div>
+                <div class="messages" id="messages"></div>
 
             <!-- Input -->
-            <div class="input-area">
+                <div class="input-area">
                 <!-- Document preview above input -->
-                <div id="doc-preview" class="doc-preview"></div>
+                    <div id="doc-preview" class="doc-preview"></div>
                 <input type="file" id="doc-file-input" multiple accept=".pdf,.xlsx,.xls,.csv,.jpg,.jpeg,.png"
                     style="display:none;">
 
-                <div class="input-box">
+                    <div class="input-box">
                     <textarea id="user-input" placeholder="Ask about KPIs, institutions, alerts, reports…" rows="1"
                         autocomplete="off" spellcheck="true"></textarea>
                     <button class="doc-btn" id="doc-upload-btn" title="Upload document (PDF, Excel, CSV, Image)">
@@ -1073,24 +1125,77 @@
                             <polyline points="17 8 12 3 7 8" />
                             <line x1="12" y1="3" x2="12" y2="15" />
                         </svg>
-                    </button>
+                        </button>
                     <button class="send-btn" id="send-btn" title="Send (Enter)">
                         <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round"
                             stroke-linejoin="round">
                             <line x1="22" y1="2" x2="11" y2="13" />
                             <polygon points="22 2 15 22 11 13 2 9 22 2" />
                         </svg>
+                        </button>
+                    </div>
+
+                    <div class="input-footer">
+                        <div class="domain-chips" id="domain-chips">
+                            <button class="d-chip active" data-domain="">General</button>
+                            <button class="d-chip" data-domain="education">Education</button>
+                            <button class="d-chip" data-domain="finance">Finance</button>
+                        <button class="d-chip" data-domain="environment">Environment</button>
+                        </div>
+                        <span class="input-hint">Enter to send · Shift+Enter for newline</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View: Automation -->
+            <div id="view-automation" class="view-content" style="display:none; padding: 24px; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <div>
+                        <h2 style="font-family: 'Fraunces', serif; font-weight: 400; font-size: 24px;">Mailing Automation</h2>
+                        <p style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;">Monitor anomalies and manage automated institutional communication.</p>
+                    </div>
+                    <button class="new-btn" style="margin: 0; width: auto;" onclick="triggerDetection()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        Run detection
                     </button>
                 </div>
 
-                <div class="input-footer">
-                    <div class="domain-chips" id="domain-chips">
-                        <button class="d-chip active" data-domain="">General</button>
-                        <button class="d-chip" data-domain="education">Education</button>
-                        <button class="d-chip" data-domain="finance">Finance</button>
-                        <button class="d-chip" data-domain="environment">Environment</button>
+                <div style="background: var(--white); border-radius: var(--radius-lg); border: 1px solid var(--border); overflow: hidden;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13.5px;">
+                        <thead style="background: var(--cream); border-bottom: 1px solid var(--border);">
+                            <tr>
+                                <th style="padding: 14px 18px; font-weight: 600; color: var(--text-secondary);">Anomaly Type</th>
+                                <th style="padding: 14px 18px; font-weight: 600; color: var(--text-secondary);">Target Institution</th>
+                                <th style="padding: 14px 18px; font-weight: 600; color: var(--text-secondary);">Status</th>
+                                <th style="padding: 14px 18px; font-weight: 600; color: var(--text-secondary);">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mail-logs-table">
+                            <tr>
+                                <td colspan="4" style="padding: 30px; text-align: center; color: var(--text-muted);">No anomalies detected yet</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- View: Search -->
+            <div id="view-search" class="view-content" style="display:none; padding: 24px; overflow-y: auto;">
+                <div style="max-width: 800px; margin: 0 auto;">
+                    <h2 style="font-family: 'Fraunces', serif; font-weight: 400; font-size: 24px; margin-bottom: 20px;">Institutional Search</h2>
+                    
+                    <div class="input-box" style="margin-bottom: 30px;">
+                        <input type="text" id="search-input" placeholder="Search across all institutional documents..." style="flex: 1; border: none; background: transparent; font-family: 'Syne', sans-serif; outline: none; padding: 5px;">
+                        <button class="send-btn" onclick="performSearch()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        </button>
                     </div>
-                    <span class="input-hint">Enter to send · Shift+Enter for newline</span>
+
+                    <div id="search-results" style="display: flex; flex-direction: column; gap: 16px;">
+                        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            <p>Search for keywords or phrases to find institutional documents.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1109,6 +1214,9 @@
             messages: {},          // { [sessionId]: [{ role, content, time, suggested_action }] }
             domain: '',            // active domain_context value
             busy: false,
+            currentView: 'chat',
+            mailLogs: [],
+            searchResults: []
         };
 
         // ─── DOM refs ─────────────────────────────────────────────────────────────
@@ -1672,6 +1780,163 @@
             state.uploadedDocs.splice(index, 1);
             renderDocPreview();
         };
+
+        window.viewDocDetails = function(id) {
+            // For now, just show a toast or open in a new tab if we had a URL
+            toast('Viewing document details...');
+            // In a real app, this would open a modal with the full text or PDF
+        };
+
+        // ─── View Switching ───────────────────────────────────────────────────────
+        function switchView(view) {
+            state.currentView = view;
+            
+            // Update nav UI
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            $(`nav-${view}`).classList.add('active');
+            
+            // Update content visibility
+            document.querySelectorAll('.view-content').forEach(el => el.style.display = 'none');
+            $(`view-${view}`).style.display = (view === 'chat') ? 'flex' : 'block';
+            
+            if (view === 'automation') loadMailLogs();
+            if (view === 'chat') renderMessages();
+            
+            elTitle.textContent = view === 'chat' ? (state.sessions.find(s => s.session_id === state.activeId)?.session_name || 'UniBot Assistant') :
+                                 view === 'automation' ? 'Mailing Automation' : 'Institutional Search';
+        }
+
+        // ─── Automation Logic ──────────────────────────────────────────────────────
+        async function loadMailLogs() {
+            const elTable = $('mail-logs-table');
+            elTable.innerHTML = '<tr><td colspan="4" style="padding: 20px; text-align: center;">Loading anomalies...</td></tr>';
+            
+            try {
+                const res = await fetch('/api/v1/chatbot/mail-logs');
+                const logs = await res.json();
+                state.mailLogs = logs;
+                
+                if (!logs.length) {
+                    elTable.innerHTML = '<tr><td colspan="4" style="padding: 30px; text-align: center; color: var(--text-muted);">No anomalies detected yet. Click "Run detection" to start.</td></tr>';
+                    return;
+                }
+                
+                elTable.innerHTML = logs.map(log => `
+                    <tr style="border-bottom: 1px solid var(--border-mid);">
+                        <td style="padding: 14px 18px;"><code style="background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 4px;">${log.anomaly_type}</code></td>
+                        <td style="padding: 14px 18px; font-weight: 500;">${log.anomaly_details.institution || 'Unknown'}</td>
+                        <td style="padding: 14px 18px;">
+                            <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 11px; background: ${log.status === 'sent' ? '#dcfce7' : log.status === 'proposed' ? '#fef9c3' : '#f3f4f6'}; color: ${log.status === 'sent' ? '#166534' : log.status === 'proposed' ? '#854d0e' : '#374151'}; font-weight: 600;">
+                                ${log.status.toUpperCase()}
+                            </span>
+                        </td>
+                        <td style="padding: 14px 18px;">
+                            ${log.status === 'proposed' ? `
+                                <div style="display: flex; gap: 8px;">
+                                    <button onclick="proposeDraft('${log.id}')" style="padding: 6px 12px; background: var(--navy); color: var(--gold-light); border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">Draft AI</button>
+                                </div>
+                            ` : log.status === 'confirmed' ? `
+                                <span style="font-size: 12px; color: var(--text-muted);">Processing...</span>
+                            ` : log.status === 'sent' ? `
+                                <span style="font-size: 12px; color: #166534;">✓ Sent</span>
+                            ` : `
+                                <span style="font-size: 12px; color: var(--text-muted);">No action</span>
+                            `}
+                        </td>
+                    </tr>
+                    ${log.body_plan ? `
+                        <tr style="background: var(--cream); border-bottom: 1px solid var(--border-mid);">
+                            <td colspan="4" style="padding: 18px;">
+                                <div style="font-size: 13px; background: var(--white); border: 1px solid var(--border-mid); border-radius: 8px; padding: 16px; position: relative;">
+                                    <div style="font-weight: 600; margin-bottom: 8px; color: var(--navy);">Draft for Review:</div>
+                                    <div style="line-height: 1.6; color: var(--text-secondary); margin-bottom: 12px;">${renderMd(log.body_plan)}</div>
+                                    <button onclick="confirmAndSend('${log.id}')" style="background: #166534; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                                        Confirm & Send
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    ` : ''}
+                `).join('');
+            } catch (err) {
+                elTable.innerHTML = '<tr><td colspan="4" style="padding: 20px; text-align: center; color: #ef4444;">Failed to load logs</td></tr>';
+            }
+        }
+
+        async function triggerDetection() {
+            toast('Running institutional anomaly detection...');
+            try {
+                await fetch('/api/v1/chatbot/detect-anomalies', { method: 'POST' });
+                setTimeout(loadMailLogs, 1500);
+            } catch (err) {
+                toast('❌ Detection failed');
+            }
+        }
+
+        async function proposeDraft(id) {
+            toast('UniBot is drafting the email...');
+            try {
+                await fetch(`/api/v1/chatbot/propose-draft/${id}`, { method: 'POST' });
+                loadMailLogs();
+            } catch (err) {
+                toast('❌ Drafting failed');
+            }
+        }
+
+        async function confirmAndSend(id) {
+            toast('Queueing email for delivery...');
+            try {
+                await fetch(`/api/v1/chatbot/confirm-send/${id}`, { method: 'POST' });
+                toast('✓ Email scheduled');
+                setTimeout(loadMailLogs, 1500);
+            } catch (err) {
+                toast('❌ Sending failed');
+            }
+        }
+
+        // ─── Search Logic ──────────────────────────────────────────────────────────
+        async function performSearch() {
+            const query = $('search-input').value.trim();
+            if (!query) return;
+            
+            const elResults = $('search-results');
+            elResults.innerHTML = '<div style="text-align: center; padding: 40px;"><div class="loading-spinner"></div><p style="margin-top: 10px; font-size: 14px; color: var(--text-muted);">Searching across UCAR network...</p></div>';
+            
+            try {
+                const res = await fetch(`/api/v1/documents/search?query=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                
+                if (!data.items.length) {
+                    elResults.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);"><p>No documents found matching your query.</p></div>';
+                    return;
+                }
+                
+                elResults.innerHTML = data.items.map(doc => `
+                    <div style="background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 18px; transition: transform 0.15s; cursor: pointer;" onclick="viewDocDetails('${doc.id}')">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                            <div>
+                                <h3 style="font-size: 15px; font-weight: 600; color: var(--navy); margin-bottom: 2px;">${esc(doc.filename)}</h3>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <span style="font-size: 11px; font-family: 'DM Mono', monospace; background: var(--cream); padding: 2px 8px; border-radius: 4px; color: var(--text-secondary);">${doc.content_type.split('/')[1].toUpperCase()}</span>
+                                    <span style="font-size: 11px; color: var(--text-muted);">${relTime(doc.created_at)}</span>
+                                </div>
+                            </div>
+                            <div style="font-size: 11px; font-weight: 500; color: var(--gold); border: 1px solid rgba(201,168,76,0.3); padding: 3px 10px; border-radius: 20px;">Institutional Source</div>
+                        </div>
+                        <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-style: italic;">
+                            "...${esc(doc.extracted_text || 'No text content available')}"
+                        </p>
+                    </div>
+                `).join('');
+            } catch (err) {
+                elResults.innerHTML = '<div style="text-align: center; padding: 40px; color: #ef4444;"><p>Search failed. Please try again.</p></div>';
+            }
+        }
+
+        $('search-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter') performSearch();
+        });
 
         // ─── Bootstrap ────────────────────────────────────────────────────────────
         (async function init() {

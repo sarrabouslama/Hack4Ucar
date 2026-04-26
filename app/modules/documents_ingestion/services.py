@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from app.modules.documents_ingestion.db_models import Document, DocumentStatus
 from app.modules.documents_ingestion.models import ExtractionResult
 from app.modules.documents_ingestion.parsers import CONTENT_TYPE_TO_EXTENSION, PARSERS_BY_EXTENSION, SUPPORTED_EXTENSIONS
+from app.core.ai_service import ai_service
 
 ParserFunction = Callable[[Path], ExtractionResult]
 
@@ -50,6 +51,13 @@ class DocumentIngestionService:
             document.extracted_data = json.dumps(self._serialize_extraction(extraction))
             document.parser_name = extraction.metadata.parser
             document.error_message = None
+            
+            # Generate embeddings for semantic search
+            if document.extracted_text:
+                try:
+                    document.embedding = await ai_service.get_embeddings(document.extracted_text[:3000])
+                except Exception as e:
+                    print(f"Warning: Could not generate embedding: {e}")
         except Exception as exc:
             document.status = DocumentStatus.FAILED.value
             document.parser_name = "failed"
@@ -73,6 +81,43 @@ class DocumentIngestionService:
         if not document:
             raise HTTPException(status_code=404, detail="Document not found")
         return document
+
+    async def hybrid_search(
+        self, 
+        db: Session, 
+        query: str, 
+        limit: int = 5,
+        doc_type: str = None
+    ) -> List[Document]:
+        """
+        Perform search using full-text search and metadata filters.
+        (Vector similarity is currently stored as JSON for compatibility).
+        """
+        if not query:
+            return []
+
+        # Full-text search part
+        from sqlalchemy import text
+        ts_query = func.plainto_tsquery("french", query)
+        text_rank = func.ts_rank(Document.search_vector, ts_query).label("text_rank")
+
+        results_query = db.query(Document).filter(
+            (Document.status == DocumentStatus.PROCESSED.value)
+        )
+
+        if doc_type:
+            results_query = results_query.filter(Document.content_type.ilike(f"%{doc_type}%"))
+
+        # In this compatibility version, we mainly use text rank
+        results = (
+            results_query
+            .filter(Document.search_vector.op("@@")(ts_query))
+            .order_by(text_rank.desc())
+            .limit(limit)
+            .all()
+        )
+        
+        return results
 
     async def process_upload_preview(self, file: UploadFile) -> Dict[str, Any]:
         """Parse an uploaded file without persisting it to the database."""

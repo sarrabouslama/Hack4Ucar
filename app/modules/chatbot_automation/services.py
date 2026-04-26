@@ -12,7 +12,9 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.modules.chatbot_automation.db_models import ChatMessage, ChatSession
+from app.modules.chatbot_automation.db_models import ChatMessage, ChatSession, MailLog
+from app.modules.chatbot_automation.tasks import detect_dropout_anomalies, send_anomaly_email
+from app.core.ai_service import ai_service
 from app.modules.chatbot_automation.models import (
     ChatContext,
     ChatHistoryItem,
@@ -202,6 +204,59 @@ class ChatbotAutomationService:
         session.status = "ended"
         session.ended_at = datetime.utcnow()
         db.commit()
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Automation Actions
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def list_mail_logs(self, db: Session, status: Optional[str] = None) -> List[MailLog]:
+        """List all mail logs, optionally filtered by status."""
+        query = db.query(MailLog).order_by(MailLog.created_at.desc())
+        if status:
+            query = query.filter(MailLog.status == status)
+        return query.all()
+
+    async def run_detection(self, db: Session) -> str:
+        """Trigger the anomaly detection task (synchronously for demo or via Celery)."""
+        # For the demo, we call the task logic directly or via delay
+        # Here we use delay to show Celery usage
+        task = detect_dropout_anomalies.delay()
+        return f"Detection task started: {task.id}"
+
+    async def propose_email_draft(self, db: Session, mail_log_id: UUID) -> MailLog:
+        """Use Gemini to draft an email based on the anomaly details."""
+        log = db.query(MailLog).filter(MailLog.id == mail_log_id).first()
+        if not log:
+            raise HTTPException(status_code=404, detail="Mail log not found")
+
+        prompt = (
+            "You are UniBot. Draft a professional email to a university director regarding a detected anomaly.\n"
+            f"Anomaly Type: {log.anomaly_type}\n"
+            f"Details: {json.dumps(log.anomaly_details)}\n"
+            "The email should be professional, empathetic, and suggest a meeting to discuss corrective actions."
+        )
+        
+        draft = await ai_service.generate_text(prompt)
+        log.body_plan = draft
+        log.subject = f"Alert: High Dropout Rate in {log.anomaly_details.get('institution', 'your institution')}"
+        db.commit()
+        return log
+
+    def confirm_and_send(self, db: Session, mail_log_id: UUID) -> str:
+        """Confirm the draft and trigger the sending task."""
+        log = db.query(MailLog).filter(MailLog.id == mail_log_id).first()
+        if not log:
+            raise HTTPException(status_code=404, detail="Mail log not found")
+
+        if log.status != "proposed" and not log.body_plan:
+            raise HTTPException(status_code=400, detail="Mail log must have a draft and be in proposed status")
+
+        log.status = "confirmed"
+        db.commit()
+        
+        # Trigger Celery task
+        task = send_anomaly_email.delay(str(log.id))
+        return f"Email sending task triggered: {task.id}"
 
     # ──────────────────────────────────────────────────────────────────────────
     # Private helpers
