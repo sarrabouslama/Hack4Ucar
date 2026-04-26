@@ -41,3 +41,5 @@ storage/
 # .venv
 .venv/
 .venv_clean/
+
+node_modules/
