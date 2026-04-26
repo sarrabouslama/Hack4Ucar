@@ -32,7 +32,16 @@ class Document(BaseModel):
     file_path = Column(String(500), nullable=True)
     module_classification = Column(String(255), nullable=True)
     institution_id = Column(String(100), nullable=True)
-    
 
+    # We use JSON for embeddings to ensure compatibility without pgvector extension.
+    # To use pgvector: 
+    # 1. Install pgvector on your Postgres server.
+    # 2. Change this to Column(Vector(768)) and import Vector from pgvector.sqlalchemy.
+    embedding = Column(JSON, nullable=True)
     
+    # Fallback for SQLite instead of TSVECTOR
+    search_vector = Column(Text, nullable=True)
 
+    # __table_args__ = (
+    #     Index("idx_doc_search_vector", "search_vector", postgresql_using="gin"),
+    # )

@@ -156,15 +156,23 @@ export default function UcarDashboard({ activeTab, setActiveTab, refreshTrigger 
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([getDashboard(), getAlerts(), getAtRisk()])
+    Promise.all([
+      getDashboard().catch(e => ({ data: {} })),
+      getAlerts().catch(e => ({ data: { alerts: [] } })),
+      getAtRisk().catch(e => ({ data: { institutions: [] } }))
+    ])
       .then(([d, a, r]) => {
         setDashboard(d.data || {});
         const alertsData = a.data?.alerts || (Array.isArray(a.data) ? a.data : []);
         setAlerts(alertsData);
         setAtRisk(r.data?.institutions || []);
       })
-      .catch(err => console.error("Erreur API:", err))
-      .finally(() => setLoading(false));
+      .catch(err => {
+        console.error("Erreur API:", err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [refreshTrigger]);
 
   if (loading) return (
@@ -198,6 +206,12 @@ export default function UcarDashboard({ activeTab, setActiveTab, refreshTrigger 
             </p>
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <button className="btn btn-ghost" onClick={() => setActiveTab('predictions')} style={{ background: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px solid #3b82f6' }}>
+              🔮 Prédictions
+            </button>
+            <button className="btn btn-ghost" onClick={() => setActiveTab('alerts')} style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid #f59e0b' }}>
+              🚨 Alertes ({dashboard?.active_alerts_count || 0})
+            </button>
             {(dashboard?.critical_alerts_count || 0) > 0 && (
               <div className="badge badge-critical" style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid #ef4444' }}>
                 🚨 {dashboard.critical_alerts_count} critique(s)
@@ -212,7 +226,7 @@ export default function UcarDashboard({ activeTab, setActiveTab, refreshTrigger 
         <div className="page">
           {/* Tabs */}
           <div className="tabs" style={{ position: 'relative', zIndex: 10 }}>
-            {([['overview', '📊 Vue d\'ensemble'], ['ranking', '🏆 Classement'], ['alerts', '🚨 Alertes']] as const).map(([k, l]) => (
+            {([['overview', '📊 Vue d\'ensemble'], ['ranking', '🏆 Classement'], ['alerts', '🚨 Alertes'], ['predictions', '🔮 Prédictions']] as const).map(([k, l]) => (
               <button
                 key={k}
                 className={`tab-btn ${activeTab === k ? 'active' : ''}`}
@@ -240,9 +254,20 @@ export default function UcarDashboard({ activeTab, setActiveTab, refreshTrigger 
                       label={cfg.label} value={kpi.avg_value} unit="%" color={cfg.color} icon={cfg.icon}
                       sub={`Min: ${kpi.min_value}% · Max: ${kpi.max_value}%`}
                     />
-                  ) : null;
+                  ) : (
+                    <div key={ind} className="card kpi-card" style={{ opacity: 0.5, borderStyle: 'dashed' }}>
+                      <div style={{ fontSize: 10, color: 'var(--muted)', marginBottom: 8 }}>{cfg.label}</div>
+                      <div style={{ fontSize: 18, fontWeight: 'bold' }}>N/A</div>
+                    </div>
+                  );
                 })}
               </div>
+
+              {rankings.length === 0 && (
+                <div className="card" style={{ textAlign: 'center', padding: '40px', border: '1px dashed var(--border)' }}>
+                  <p style={{ color: 'var(--muted)' }}>Aucune donnée disponible pour le moment. Assurez-vous que le backend est lancé et que les données sont semées.</p>
+                </div>
+              )}
 
               <div className="grid-2">
                 {/* Bar chart comparison */}

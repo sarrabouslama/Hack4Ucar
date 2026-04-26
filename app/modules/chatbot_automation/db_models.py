@@ -3,7 +3,7 @@ Database models for chatbot and automation
 """
 
 from sqlalchemy import Column, String, DateTime, Text, Boolean, JSON
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Uuid as UUID
 from datetime import datetime
 
 from app.core.models import BaseModel

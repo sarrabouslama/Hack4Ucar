@@ -140,32 +140,39 @@ export default function CO2Forest() {
       </div>
 
       <div className="forest">
-        {data.map((inst, idx) => {
-          const lv = getLevel(inst.co2);
-          const col = ESG_LEVELS[lv].color;
-          return (
-            <div key={inst.institution_id} className="tree-card">
-              <div className="tree-wrap sway" style={{ animationDelay: `${idx * 0.3}s` }}>
-                <svg viewBox="0 0 110 150" xmlns="http://www.w3.org/2000/svg" style={{ overflow: 'visible' }}>
-                  <defs>
-                    <filter id="leafShadow"><feDropShadow dx="1" dy="2" stdDeviation="1" floodOpacity="0.3"/></filter>
-                    {[leafDark[lv], leafMid[lv], leafLight[lv]].map(f => (
-                      <radialGradient key={f} id={`leafGrad_${f.replace('#','')}`} cx="35%" cy="35%" r="65%">
-                        <stop offset="0%" stopColor={leafHi[lv]} stopOpacity="0.7"/><stop offset="100%" stopColor={f} stopOpacity="0"/>
-                      </radialGradient>
-                    ))}
-                  </defs>
-                  <LeafCloud cx={55} cy={lv < 3 ? 55 : 80} rx={lv < 2 ? 45 : 25} ry={lv < 2 ? 35 : 20} count={lv === 0 ? 120 : lv === 1 ? 80 : lv === 2 ? 40 : 15} lv={lv} seedOffset={idx} />
-                  <Trunk x={55} y={145} w={18} h={lv < 2 ? 45 : 35} lv={lv} />
-                </svg>
+        {data.length === 0 ? (
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px', color: 'rgba(255,255,255,0.3)' }}>
+            <div style={{ fontSize: 40, marginBottom: 20 }}>🍃</div>
+            <p>La forêt est vide. Les données ESG n'ont pas encore été chargées.</p>
+          </div>
+        ) : (
+          data.map((inst, idx) => {
+            const lv = getLevel(inst.co2);
+            const col = ESG_LEVELS[lv].color;
+            return (
+              <div key={inst.institution_id} className="tree-card">
+                <div className="tree-wrap sway" style={{ animationDelay: `${idx * 0.3}s` }}>
+                  <svg viewBox="0 0 110 150" xmlns="http://www.w3.org/2000/svg" style={{ overflow: 'visible' }}>
+                    <defs>
+                      <filter id="leafShadow"><feDropShadow dx="1" dy="2" stdDeviation="1" floodOpacity="0.3"/></filter>
+                      {[leafDark[lv], leafMid[lv], leafLight[lv]].map(f => (
+                        <radialGradient key={f} id={`leafGrad_${f.replace('#','')}`} cx="35%" cy="35%" r="65%">
+                          <stop offset="0%" stopColor={leafHi[lv]} stopOpacity="0.7"/><stop offset="100%" stopColor={f} stopOpacity="0"/>
+                        </radialGradient>
+                      ))}
+                    </defs>
+                    <LeafCloud cx={55} cy={lv < 3 ? 55 : 80} rx={lv < 2 ? 45 : 25} ry={lv < 2 ? 35 : 20} count={lv === 0 ? 120 : lv === 1 ? 80 : lv === 2 ? 40 : 15} lv={lv} seedOffset={idx} />
+                    <Trunk x={55} y={145} w={18} h={lv < 2 ? 45 : 35} lv={lv} />
+                  </svg>
+                </div>
+                <div className="inst-name">{inst.institution_name}</div>
+                <div className="co2-badge" style={{ background: `${col}22`, color: col, border: `1px solid ${col}44`, boxShadow: `0 0 10px ${col}11` }}>
+                  {inst.co2} kg CO₂
+                </div>
               </div>
-              <div className="inst-name">{inst.institution_name}</div>
-              <div className="co2-badge" style={{ background: `${col}22`, color: col, border: `1px solid ${col}44`, boxShadow: `0 0 10px ${col}11` }}>
-                {inst.co2} kg CO₂
-              </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
     </div>
   );
