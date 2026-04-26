@@ -1,12 +1,12 @@
-"""
-Database models for documents ingestion
-"""
+"""Database models for documents ingestion"""
 
-from sqlalchemy import Column, String, Integer, Text, Enum
 import enum
+import json
+
+from sqlalchemy import Column, Integer, String, Text, Index, Computed, JSON
+from sqlalchemy.dialects.postgresql import TSVECTOR
 
 from app.core.models import BaseModel
-
 
 class DocumentStatus(str, enum.Enum):
     """Document status enum"""
@@ -26,4 +26,23 @@ class Document(BaseModel):
     size = Column(Integer, nullable=False)
     status = Column(String(50), default=DocumentStatus.PENDING, nullable=False)
     extracted_data = Column(Text, nullable=True)
+    extracted_text = Column(Text, nullable=True)
+    parser_name = Column(String(100), nullable=True)
+    error_message = Column(Text, nullable=True)
     file_path = Column(String(500), nullable=True)
+    
+    # We use JSON for embeddings to ensure compatibility without pgvector extension.
+    # To use pgvector: 
+    # 1. Install pgvector on your Postgres server.
+    # 2. Change this to Column(Vector(768)) and import Vector from pgvector.sqlalchemy.
+    embedding = Column(JSON, nullable=True)
+    
+    # TSVector for full-text search (Native to PostgreSQL)
+    search_vector = Column(
+        TSVECTOR,
+        Computed("to_tsvector('french', coalesce(filename, '') || ' ' || coalesce(extracted_text, ''))", persisted=True)
+    )
+
+    __table_args__ = (
+        Index("idx_doc_search_vector", "search_vector", postgresql_using="gin"),
+    )

@@ -3,6 +3,7 @@ Database models for education research
 """
 
 from sqlalchemy import Column, String, Integer, Float, DateTime, Text, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -38,8 +39,8 @@ class Enrollment(BaseModel):
 
     __tablename__ = "enrollments"
 
-    student_id = Column(String, ForeignKey("students.id"), nullable=False)
-    course_id = Column(String, ForeignKey("courses.id"), nullable=False)
+    student_id = Column(UUID(as_uuid=True), ForeignKey("students.id"), nullable=False)
+    course_id = Column(UUID(as_uuid=True), ForeignKey("courses.id"), nullable=False)
     enrollment_date = Column(DateTime, default=datetime.utcnow, nullable=False)
     grade = Column(String(2), nullable=True)
     status = Column(String(50), default="active", nullable=False)
@@ -50,8 +51,8 @@ class Exam(BaseModel):
 
     __tablename__ = "exams"
 
-    course_id = Column(String, ForeignKey("courses.id"), nullable=False)
-    student_id = Column(String, ForeignKey("students.id"), nullable=False)
+    course_id = Column(UUID(as_uuid=True), ForeignKey("courses.id"), nullable=False)
+    student_id = Column(UUID(as_uuid=True), ForeignKey("students.id"), nullable=False)
     exam_date = Column(DateTime, nullable=False)
     score = Column(Float, nullable=False)
     max_score = Column(Float, default=100.0)
