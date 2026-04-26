@@ -37,7 +37,11 @@ def reset_db():
         conn.execute(text("DROP TABLE IF EXISTS workflow_executions CASCADE"))
         conn.execute(text("DROP TABLE IF EXISTS orchestrations CASCADE"))
         conn.commit()
-    print("Database reset complete.")
+    # Recreate all tables using the Database manager's logic
+    print("Recreating all tables...")
+    from app.core.database import db
+    db.create_tables()
+    print("Database reset and recreation complete.")
 
 if __name__ == "__main__":
     reset_db()

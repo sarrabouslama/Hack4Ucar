@@ -2,7 +2,6 @@
 
 from typing import List, Optional
 from uuid import UUID
-
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 

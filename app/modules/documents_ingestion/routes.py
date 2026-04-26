@@ -2,8 +2,8 @@
 API routes for documents ingestion
 """
 
-from uuid import UUID
 
+from uuid import UUID
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 

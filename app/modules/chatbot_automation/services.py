@@ -218,10 +218,10 @@ class ChatbotAutomationService:
 
     async def run_detection(self, db: Session) -> str:
         """Trigger the anomaly detection task (synchronously for demo or via Celery)."""
-        # For the demo, we call the task logic directly or via delay
-        # Here we use delay to show Celery usage
-        task = detect_dropout_anomalies.delay()
-        return f"Detection task started: {task.id}"
+        # For the demo, we call the task logic directly instead of using Celery delay
+        # to ensure it executes immediately without needing a separate worker running.
+        detect_dropout_anomalies()
+        return "Detection task completed successfully"
 
     async def propose_email_draft(self, db: Session, mail_log_id: UUID) -> MailLog:
         """Use Gemini to draft an email based on the anomaly details."""
@@ -254,9 +254,9 @@ class ChatbotAutomationService:
         log.status = "confirmed"
         db.commit()
         
-        # Trigger Celery task
-        task = send_anomaly_email.delay(str(log.id))
-        return f"Email sending task triggered: {task.id}"
+        # Trigger task synchronously for the demo
+        send_anomaly_email(str(log.id))
+        return "Email sending task completed"
 
     # ──────────────────────────────────────────────────────────────────────────
     # Private helpers

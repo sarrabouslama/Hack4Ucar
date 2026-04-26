@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, List, Tuple
 from uuid import UUID, uuid4
 
 from fastapi import HTTPException, UploadFile
+from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 
 from app.modules.documents_ingestion.db_models import Document, DocumentStatus
@@ -97,7 +98,6 @@ class DocumentIngestionService:
             return []
 
         # Full-text search part
-        from sqlalchemy import text
         ts_query = func.plainto_tsquery("french", query)
         text_rank = func.ts_rank(Document.search_vector, ts_query).label("text_rank")
 

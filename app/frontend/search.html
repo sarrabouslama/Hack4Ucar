@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Search — UniBot · UCAR</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/modules.css">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --navy: #0d1b38; --navy-mid: #162a56; --navy-soft: #1e3a6e; --gold: #c9a84c; --gold-light: #e8c96a; --gold-pale: #f5e9c4;
+            --cream: #f6f2eb; --cream-mid: #ede8df; --cream-deep: #e4ddd2; --white: #ffffff;
+            --text-primary: #111827; --text-secondary: #4b5563; --text-muted: #9ca3af;
+            --border: rgba(0, 0, 0, 0.08); --border-mid: rgba(0, 0, 0, 0.14);
+            --sidebar-w: 272px; --header-h: 58px; --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+        }
+        html, body { height: 100%; overflow: hidden; background: var(--cream); font-family: 'Syne', sans-serif; color: var(--text-primary); -webkit-font-smoothing: antialiased; }
+        .shell { display: grid; grid-template-columns: var(--sidebar-w) 1fr; height: 100vh; }
+        .sidebar { display: flex; flex-direction: column; background: var(--navy); border-right: 1px solid rgba(255, 255, 255, 0.06); overflow: hidden; }
+        .sidebar-brand { padding: 22px 20px 18px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); flex-shrink: 0; }
+        .brand-row { display: flex; align-items: center; gap: 11px; margin-bottom: 5px; }
+        .brand-gem { width: 34px; height: 34px; background: var(--gold); border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .brand-gem svg { width: 18px; height: 18px; }
+        .brand-name { font-family: 'Fraunces', serif; font-size: 19px; font-weight: 500; color: #f0ece3; letter-spacing: 0.01em; }
+        .brand-sub { font-size: 10.5px; color: rgba(255, 255, 255, 0.32); letter-spacing: 0.1em; text-transform: uppercase; padding-left: 45px; }
+        .section-label { font-size: 10px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255, 255, 255, 0.25); padding: 18px 18px 8px; }
+        .sidebar-user { padding: 14px 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-top: auto; }
+        .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(201, 168, 76, 0.18); border: 1px solid rgba(201, 168, 76, 0.35); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--gold-light); flex-shrink: 0; }
+        .user-info { flex: 1; min-width: 0; }
+        .user-name { font-size: 13px; color: rgba(255, 255, 255, 0.78); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .user-role { font-size: 11px; color: rgba(255, 255, 255, 0.3); margin-top: 1px; }
+        .main { display: flex; flex-direction: column; background: var(--cream); overflow: hidden; }
+        .chat-header { height: var(--header-h); padding: 0 22px; background: var(--white); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+        .header-title { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 500; color: var(--text-primary); }
+        .header-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); font-family: 'DM Mono', monospace; }
+        .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #34d399; flex-shrink: 0; }
+        .input-box { display: flex; align-items: center; gap: 10px; background: var(--cream); border: 1px solid var(--border-mid); border-radius: var(--radius-lg); padding: 10px 12px; transition: border-color 0.15s, box-shadow 0.15s; }
+        .input-box:focus-within { border-color: rgba(201, 168, 76, 0.55); box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.08); }
+        .send-btn { width: 34px; height: 34px; background: var(--navy); border: none; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        #toast { position: fixed; bottom: 24px; right: 24px; background: var(--navy); color: #f0ece3; padding: 10px 18px; border-radius: var(--radius-md); font-size: 13px; opacity: 0; transform: translateY(8px); transition: all 0.25s; pointer-events: none; z-index: 200; border-left: 3px solid var(--gold); }
+        #toast.show { opacity: 1; transform: translateY(0); }
+        .view-content { padding: 24px; overflow-y: auto; flex: 1; }
+        .loading-spinner { width: 36px; height: 36px; border: 3px solid var(--cream-deep); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div id="toast"></div>
+    <div class="shell">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-row">
+                    <div class="brand-gem"><svg viewBox="0 0 24 24" fill="none" stroke="#0d1b38" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" /></svg></div>
+                    <span class="brand-name">UniBot</span>
+                </div>
+                <div class="brand-sub">UniSmart AI · UCAR</div>
+            </div>
+
+            <div class="nav-links" style="margin-top: 10px;">
+                <a href="index.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Assistant
+                </a>
+                <a href="automation.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    Automation
+                </a>
+                <a href="search.html" class="nav-item active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Search
+                </a>
+            </div>
+
+            <div class="sidebar-user">
+                <div class="user-avatar">UC</div>
+                <div class="user-info">
+                    <div class="user-name">UCAR Central</div>
+                    <div class="user-role">Administrator</div>
+                </div>
+            </div>
+        </aside>
+
+        <div class="main">
+            <div class="chat-header">
+                <div class="header-left">
+                    <div class="header-title">Institutional Search</div>
+                    <div class="header-status"><span class="status-dot"></span>Online · Global Index</div>
+                </div>
+            </div>
+
+            <div class="view-content">
+                <div class="search-container">
+                    <h2 style="font-family: 'Fraunces', serif; font-weight: 400; font-size: 24px; margin-bottom: 20px;">Knowledge Base Explorer</h2>
+                    
+                    <div class="input-box" style="margin-bottom: 30px;">
+                        <input type="text" id="search-input" placeholder="Search across all institutional documents..." style="flex: 1; border: none; background: transparent; font-family: 'Syne', sans-serif; outline: none; padding: 5px;">
+                        <button class="send-btn" onclick="SearchModule.perform()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        </button>
+                    </div>
+
+                    <div id="search-results" style="display: flex; flex-direction: column; gap: 16px;">
+                        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            <p>Search for keywords or phrases to find institutional documents.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Shared Helpers
+        window.$ = id => document.getElementById(id);
+        window.toast = (msg, ms = 3000) => {
+            const el = $('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), ms);
+        };
+        window.relTime = (iso) => {
+            if (!iso) return '';
+            const diff = Date.now() - new Date(iso).getTime();
+            if (diff < 60_000) return 'just now';
+            if (diff < 3_600_000) return Math.floor(diff / 60_000) + 'm ago';
+            return new Date(iso).toLocaleDateString();
+        };
+    </script>
+    <script src="js/search.js"></script>
+    <script>
+        // Init module
+        if (window.SearchModule) SearchModule.loadAll();
+    </script>
+</body>
+</html>
