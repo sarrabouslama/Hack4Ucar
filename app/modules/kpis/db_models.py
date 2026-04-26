@@ -24,12 +24,21 @@ class KPIMetric(Base):
     
     # Value
     value = Column(Float, nullable=False)
+    metric_value = Column(Float, nullable=True) # Compatibility for Finance module
     unit = Column(String(50))
     
     # Metadata
     reporting_date = Column(DateTime, nullable=False)
+    recorded_at = Column(DateTime, default=lambda: __import__('datetime').datetime.utcnow()) # Compatibility
     data_source = Column(String(100), default="manual")
+    source = Column(String(100), nullable=True) # Compatibility
     notes = Column(Text)
+    
+    # Forecast fields (from Finance module)
+    is_forecast = Column(Boolean, default=False, nullable=False)
+    forecast_horizon_days = Column(Integer, nullable=True)
+    lower_bound = Column(Float, nullable=True)
+    upper_bound = Column(Float, nullable=True)
     
     # Timestamps
     created_at = Column(DateTime, default=lambda: __import__('datetime').datetime.utcnow())
