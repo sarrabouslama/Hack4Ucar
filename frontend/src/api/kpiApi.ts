@@ -29,3 +29,7 @@ export const uploadDocument = (file: File, institutionId: string) => {
     headers: { 'Content-Type': 'multipart/form-data' }
   });
 };
+
+export const getDocuments = () => api.get('/api/v1/documents');
+export const getInstitutionDocuments = (institutionId: string) => 
+    api.get(`/api/v1/documents`, { params: { institution_id: institutionId } });

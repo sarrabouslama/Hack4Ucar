@@ -116,6 +116,7 @@ class DocumentIngestionService:
             size=size,
             status=DocumentStatus.PENDING.value,
             file_path=str(saved_path),
+            institution_id=institution_id
         )
         db.add(document)
         db.commit()
@@ -164,8 +165,11 @@ class DocumentIngestionService:
         db.refresh(document)
         return document
 
-    def list_documents(self, db: Session) -> List[Document]:
-        return db.query(Document).order_by(Document.created_at.desc()).all()
+    def list_documents(self, db: Session, institution_id: Optional[str] = None) -> List[Document]:
+        query = db.query(Document)
+        if institution_id:
+            query = query.filter(Document.institution_id == institution_id)
+        return query.order_by(Document.created_at.desc()).all()
 
     def get_document(self, db: Session, document_id: UUID) -> Document:
         document = db.query(Document).filter(Document.id == document_id).first()
