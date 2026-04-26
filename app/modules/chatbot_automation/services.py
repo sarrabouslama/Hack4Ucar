@@ -160,7 +160,7 @@ class ChatbotAutomationService:
         if settings.SKIP_DB_STARTUP:
             raise HTTPException(status_code=503, detail="Chat session lookup requires a database connection.")
 
-        session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+        session = db.query(ChatSession).filter(ChatSession.id == str(session_id)).first()
         if not session:
             raise HTTPException(status_code=404, detail="Chat session not found")
 
@@ -195,7 +195,7 @@ class ChatbotAutomationService:
         if settings.SKIP_DB_STARTUP:
             raise HTTPException(status_code=503, detail="Requires a database connection.")
 
-        session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+        session = db.query(ChatSession).filter(ChatSession.id == str(session_id)).first()
         if not session:
             raise HTTPException(status_code=404, detail="Chat session not found")
 
@@ -209,7 +209,7 @@ class ChatbotAutomationService:
 
     def _get_or_create_session(self, db: Session, request: ChatRequest) -> ChatSession:
         if request.session_id:
-            session = db.query(ChatSession).filter(ChatSession.id == request.session_id).first()
+            session = db.query(ChatSession).filter(ChatSession.id == str(request.session_id)).first()
             if session:
                 return session
             raise HTTPException(status_code=404, detail="Chat session not found")
@@ -220,7 +220,7 @@ class ChatbotAutomationService:
             domain_context=request.domain_context,
         )
         if session.id is None:
-            session.id = uuid4()
+            session.id = str(uuid4())
         db.add(session)
         db.flush()
         return session

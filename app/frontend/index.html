@@ -142,6 +142,27 @@
             flex-shrink: 0;
         }
 
+        .switch-link {
+            margin: 10px 16px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+            text-decoration: none;
+            color: rgba(255, 255, 255, 0.76);
+            font-size: 12.5px;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .switch-link:hover {
+            background: rgba(201, 168, 76, 0.16);
+            color: var(--gold-light);
+        }
+
         .section-label {
             font-size: 10px;
             font-weight: 500;
@@ -1022,6 +1043,11 @@
                 </svg>
                 New conversation
             </button>
+
+            <a class="switch-link" href="/institute.html">
+                <span>Institute sustainability console</span>
+                <span>Open</span>
+            </a>
 
             <div class="section-label">Conversations</div>
 

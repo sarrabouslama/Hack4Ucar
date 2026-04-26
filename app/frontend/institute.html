@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Institute Console - UniSmart AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600&display=swap"
+        rel="stylesheet" />
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --navy: #0d1b38;
+            --navy-mid: #162a56;
+            --navy-soft: #1e3a6e;
+            --gold: #c9a84c;
+            --gold-light: #e8c96a;
+            --gold-pale: #f5e9c4;
+            --cream: #f6f2eb;
+            --cream-mid: #ede8df;
+            --cream-deep: #e4ddd2;
+            --white: #ffffff;
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --text-muted: #9ca3af;
+            --border: rgba(0, 0, 0, 0.08);
+            --border-mid: rgba(0, 0, 0, 0.14);
+            --success: #23815b;
+            --warning: #9a6f15;
+            --danger: #a33a2d;
+            --sidebar-w: 272px;
+            --header-h: 64px;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --shadow: 0 18px 44px rgba(13, 27, 56, 0.08);
+        }
+
+        html,
+        body {
+            height: 100%;
+            background: var(--cream);
+            font-family: 'Syne', sans-serif;
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        .shell {
+            display: grid;
+            grid-template-columns: var(--sidebar-w) 1fr;
+            height: 100vh;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            background: var(--navy);
+            border-right: 1px solid rgba(255, 255, 255, 0.06);
+            overflow: hidden;
+        }
+
+        .sidebar-brand {
+            padding: 22px 20px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            flex-shrink: 0;
+        }
+
+        .brand-row {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            margin-bottom: 5px;
+        }
+
+        .brand-gem {
+            width: 34px;
+            height: 34px;
+            background: var(--gold);
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .brand-gem svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .brand-name {
+            font-family: 'Fraunces', serif;
+            font-size: 19px;
+            font-weight: 500;
+            color: #f0ece3;
+            letter-spacing: 0.01em;
+        }
+
+        .brand-sub {
+            font-size: 10.5px;
+            color: rgba(255, 255, 255, 0.32);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding-left: 45px;
+        }
+
+        .nav-link {
+            margin: 16px 16px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: var(--radius-md);
+            text-decoration: none;
+            color: rgba(255, 255, 255, 0.78);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: rgba(201, 168, 76, 0.16);
+            color: var(--gold-light);
+        }
+
+        .section-label {
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.25);
+            padding: 20px 18px 10px;
+        }
+
+        .section-links {
+            padding: 0 10px;
+            display: grid;
+            gap: 6px;
+        }
+
+        .section-link {
+            color: rgba(255, 255, 255, 0.66);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 9px 12px;
+            border-radius: var(--radius-md);
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .section-link:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--gold-light);
+        }
+
+        .sidebar-foot {
+            margin-top: auto;
+            padding: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .profile-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-md);
+            padding: 14px;
+            color: rgba(255, 255, 255, 0.76);
+        }
+
+        .profile-name {
+            font-size: 14px;
+            color: #f0ece3;
+        }
+
+        .profile-meta {
+            margin-top: 4px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.36);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .main {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            height: var(--header-h);
+            padding: 0 24px;
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .header-title {
+            font-family: 'Fraunces', serif;
+            font-size: 20px;
+            color: var(--navy);
+        }
+
+        .header-sub {
+            font-size: 12px;
+            font-family: 'DM Mono', monospace;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ghost-link,
+        .primary-btn,
+        .soft-btn {
+            border-radius: 999px;
+            padding: 9px 14px;
+            font-size: 12px;
+            font-family: 'DM Mono', monospace;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            text-decoration: none;
+            border: 1px solid transparent;
+            transition: transform 0.12s, background 0.12s, border-color 0.12s;
+        }
+
+        .ghost-link {
+            background: rgba(201, 168, 76, 0.08);
+            border-color: rgba(201, 168, 76, 0.24);
+            color: #7a5b12;
+        }
+
+        .primary-btn {
+            background: var(--navy);
+            color: var(--gold-light);
+        }
+
+        .soft-btn {
+            background: var(--white);
+            border-color: var(--border-mid);
+            color: var(--text-secondary);
+        }
+
+        .ghost-link:hover,
+        .primary-btn:hover,
+        .soft-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .content {
+            overflow-y: auto;
+            padding: 22px 24px 32px;
+        }
+
+        .content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .content::-webkit-scrollbar-thumb {
+            background: var(--cream-deep);
+            border-radius: 999px;
+        }
+
+        .top-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            padding: 18px;
+            min-height: 146px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            font-family: 'DM Mono', monospace;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .stat-value {
+            margin-top: 10px;
+            font-size: 34px;
+            line-height: 1;
+            font-family: 'Fraunces', serif;
+            color: var(--navy);
+        }
+
+        .stat-sub {
+            margin-top: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.55;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 12px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-family: 'DM Mono', monospace;
+            background: rgba(35, 129, 91, 0.1);
+            color: var(--success);
+        }
+
+        .status-pill.warning {
+            background: rgba(154, 111, 21, 0.12);
+            color: var(--warning);
+        }
+
+        .status-pill.danger {
+            background: rgba(163, 58, 45, 0.12);
+            color: var(--danger);
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+            gap: 16px;
+            margin-top: 18px;
+        }
+
+        .stack {
+            display: grid;
+            gap: 16px;
+        }
+
+        .panel {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .panel-head {
+            padding: 16px 18px 12px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .panel-title {
+            font-family: 'Fraunces', serif;
+            font-size: 21px;
+            color: var(--navy);
+        }
+
+        .panel-copy {
+            margin-top: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.55;
+            max-width: 64ch;
+        }
+
+        .panel-body {
+            padding: 18px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .field {
+            display: grid;
+            gap: 8px;
+        }
+
+        .field.full {
+            grid-column: 1 / -1;
+        }
+
+        .field label {
+            font-size: 11px;
+            font-family: 'DM Mono', monospace;
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            border: 1px solid var(--border-mid);
+            border-radius: var(--radius-md);
+            padding: 11px 12px;
+            font-family: 'Syne', sans-serif;
+            font-size: 14px;
+            color: var(--text-primary);
+            background: var(--cream);
+            outline: none;
+        }
+
+        textarea {
+            min-height: 118px;
+            resize: vertical;
+            line-height: 1.55;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: rgba(201, 168, 76, 0.55);
+            box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.09);
+        }
+
+        .utility-grid,
+        .initiative-list,
+        .email-grid {
+            display: grid;
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        .utility-row,
+        .initiative-row {
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg, rgba(246, 242, 235, 0.6), rgba(255, 255, 255, 0.92));
+            border-radius: var(--radius-lg);
+            padding: 14px;
+        }
+
+        .utility-row {
+            display: grid;
+            grid-template-columns: 132px repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            align-items: end;
+        }
+
+        .utility-type {
+            font-size: 12px;
+            font-family: 'DM Mono', monospace;
+            color: var(--navy);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding-bottom: 12px;
+        }
+
+        .initiative-row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .initiative-row .field.full {
+            grid-column: 1 / -1;
+        }
+
+        .toolbar {
+            margin-top: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .insight-list,
+        .doc-list,
+        .breakdown-list,
+        .timeline-list,
+        .method-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .insight-item,
+        .doc-item,
+        .timeline-item,
+        .method-item {
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 12px 14px;
+            background: var(--white);
+        }
+
+        .breakdown-row {
+            display: grid;
+            gap: 8px;
+        }
+
+        .breakdown-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .bar {
+            height: 10px;
+            background: var(--cream-mid);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .bar > span {
+            display: block;
+            height: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--gold), var(--navy-soft));
+        }
+
+        .gauge {
+            display: grid;
+            place-items: center;
+            padding: 16px 0 8px;
+        }
+
+        .gauge-ring {
+            width: 186px;
+            height: 186px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: conic-gradient(var(--gold) 0deg, var(--navy) 0deg, rgba(228, 221, 210, 0.9) 0deg);
+            position: relative;
+        }
+
+        .gauge-ring::after {
+            content: "";
+            position: absolute;
+            inset: 16px;
+            border-radius: 50%;
+            background: var(--white);
+        }
+
+        .gauge-copy {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+
+        .gauge-score {
+            font-family: 'Fraunces', serif;
+            font-size: 52px;
+            color: var(--navy);
+            line-height: 1;
+        }
+
+        .gauge-label {
+            margin-top: 8px;
+            font-size: 11px;
+            font-family: 'DM Mono', monospace;
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .trend-grid {
+            display: grid;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .trend-line {
+            display: grid;
+            grid-template-columns: 88px 1fr 84px;
+            gap: 10px;
+            align-items: center;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .trend-rail {
+            height: 14px;
+            border-radius: 999px;
+            background: var(--cream-mid);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .trend-rail .gross {
+            position: absolute;
+            inset: 0 auto 0 0;
+            background: rgba(13, 27, 56, 0.78);
+            border-radius: 999px;
+            height: 100%;
+        }
+
+        .trend-rail .optimized {
+            position: absolute;
+            inset: 2px auto 2px 2px;
+            background: rgba(201, 168, 76, 0.9);
+            border-radius: 999px;
+        }
+
+        .doc-upload {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 14px;
+            border: 1px dashed rgba(201, 168, 76, 0.38);
+            border-radius: var(--radius-lg);
+            background: rgba(245, 233, 196, 0.35);
+            margin-top: 14px;
+        }
+
+        .muted {
+            color: var(--text-muted);
+        }
+
+        .tiny {
+            font-size: 12px;
+        }
+
+        .doc-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(201, 168, 76, 0.12);
+            color: #7a5b12;
+            font-size: 12px;
+            margin: 8px 8px 0 0;
+        }
+
+        .empty {
+            padding: 14px;
+            border-radius: var(--radius-md);
+            background: var(--cream);
+            border: 1px dashed var(--border-mid);
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .toast {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            padding: 12px 14px;
+            border-radius: var(--radius-md);
+            background: var(--navy);
+            color: var(--gold-light);
+            font-size: 13px;
+            box-shadow: 0 12px 30px rgba(13, 27, 56, 0.25);
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(10px);
+            transition: opacity 0.2s, transform 0.2s;
+            max-width: 340px;
+            z-index: 50;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 1380px) {
+            .top-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 1080px) {
+            body {
+                overflow: auto;
+            }
+
+            .shell {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .content {
+                overflow: visible;
+            }
+        }
+
+        @media (max-width: 760px) {
+            .top-grid,
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .utility-row,
+            .initiative-row,
+            .trend-line {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                height: auto;
+                padding: 16px;
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="shell">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-row">
+                    <div class="brand-gem">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#0d1b38" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"></path>
+                            <path d="M12 12l8-4.5"></path>
+                            <path d="M12 12L4 7.5"></path>
+                            <path d="M12 12v9"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="brand-name">UniSmart AI</div>
+                        <div class="brand-sub">Institute Workspace</div>
+                    </div>
+                </div>
+            </div>
+
+            <a class="nav-link" href="/index.html"><span>UCAR Central</span><span>Open</span></a>
+            <a class="nav-link active" href="/institute.html"><span>Institute Console</span><span>Live</span></a>
+
+            <div class="section-label">Navigation</div>
+            <div class="section-links">
+                <a class="section-link" href="#overview">Vue d'ensemble</a>
+                <a class="section-link" href="#energy">Consommation</a>
+                <a class="section-link" href="#rse">Actes RSE</a>
+                <a class="section-link" href="#ocr">OCR Documents</a>
+                <a class="section-link" href="#email">Empreinte email</a>
+            </div>
+
+            <div class="section-label">Modules actifs</div>
+            <div class="section-links">
+                <a class="section-link" href="#scorecard">CO2 optimise</a>
+                <a class="section-link" href="#email-results">Score numerique</a>
+                <a class="section-link" href="#documents">Justificatifs</a>
+            </div>
+
+            <div class="sidebar-foot">
+                <div class="profile-card">
+                    <div class="profile-name" id="sidebarInstituteName">Institut des Sciences Appliquees</div>
+                    <div class="profile-meta">UCAR Affiliate · Environment Desk</div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main">
+            <header class="header">
+                <div>
+                    <div class="header-title">Institute Sustainability Console</div>
+                    <div class="header-sub">Factures, OCR, RSE, empreinte email et score environnemental consolide</div>
+                </div>
+                <div class="header-actions">
+                    <a class="ghost-link" href="/index.html">Open UniBot</a>
+                    <button class="soft-btn" id="fill-sample-btn" type="button">Sample Data</button>
+                    <button class="primary-btn" id="run-all-btn" type="button">Run Full Analysis</button>
+                </div>
+            </header>
+
+            <div class="content">
+                <section class="top-grid" id="overview">
+                    <article class="stat-card">
+                        <div class="stat-label">Environmental Score</div>
+                        <div class="stat-value" id="scoreValue">--</div>
+                        <div class="stat-sub" id="scoreCaption">Le score apparaItra apres calcul du moteur environnemental.</div>
+                        <div class="status-pill" id="scoreVerdictPill">Awaiting data</div>
+                    </article>
+                    <article class="stat-card">
+                        <div class="stat-label">CO2 Optimise</div>
+                        <div class="stat-value" id="optimizedValue">--</div>
+                        <div class="stat-sub" id="optimizedCaption">CO2 brut moins reductions RSE verifiees.</div>
+                    </article>
+                    <article class="stat-card">
+                        <div class="stat-label">Email Footprint</div>
+                        <div class="stat-value" id="emailScoreValue">--</div>
+                        <div class="stat-sub" id="emailCaption">Score numerique sobre pour la messagerie institutionnelle.</div>
+                    </article>
+                    <article class="stat-card">
+                        <div class="stat-label">Documents Analyses</div>
+                        <div class="stat-value" id="docsCountValue">0</div>
+                        <div class="stat-sub" id="docsCaption">OCR, uploads et justificatifs relies a la periode selectionnee.</div>
+                    </article>
+                </section>
+
+                <section class="main-grid">
+                    <div class="stack">
+                        <section class="panel" id="energy">
+                            <div class="panel-head">
+                                <div>
+                                    <div class="panel-title">Profil Institut & Consommation</div>
+                                    <div class="panel-copy">Saisis la surface, les effectifs et les factures d'electricite, gaz et eau. Le moteur calcule le CO2/personne, compare au benchmark, puis rend un verdict de surconsommation ou sobriete.</div>
+                                </div>
+                            </div>
+                            <div class="panel-body">
+                                <div class="form-grid">
+                                    <div class="field">
+                                        <label for="institution-id">Institution ID</label>
+                                        <input id="institution-id" value="ucar-isae" />
+                                    </div>
+                                    <div class="field">
+                                        <label for="institution-name">Institution Name</label>
+                                        <input id="institution-name" value="Institut des Sciences Appliquees" />
+                                    </div>
+                                    <div class="field">
+                                        <label for="surface-m2">Surface m2</label>
+                                        <input id="surface-m2" type="number" value="8400" />
+                                    </div>
+                                    <div class="field">
+                                        <label for="students-count">Etudiants</label>
+                                        <input id="students-count" type="number" value="1420" />
+                                    </div>
+                                    <div class="field">
+                                        <label for="employees-count">Employes</label>
+                                        <input id="employees-count" type="number" value="180" />
+                                    </div>
+                                    <div class="field">
+                                        <label for="period-label">Periode</label>
+                                        <input id="period-label" value="2026-S1" />
+                                    </div>
+                                </div>
+
+                                <div class="utility-grid">
+                                    <div class="utility-row">
+                                        <div class="utility-type">Electricity</div>
+                                        <div class="field"><label for="electricity-consumption">Consommation</label><input id="electricity-consumption" type="number" value="420000" /></div>
+                                        <div class="field"><label for="electricity-unit">Unite</label><select id="electricity-unit"><option value="kwh">kWh</option></select></div>
+                                        <div class="field"><label for="electricity-cost">Montant</label><input id="electricity-cost" type="number" value="97000" /></div>
+                                        <div class="field"><label for="electricity-note">Lecture</label><input id="electricity-note" value="Campus principal" /></div>
+                                    </div>
+                                    <div class="utility-row">
+                                        <div class="utility-type">Gas</div>
+                                        <div class="field"><label for="gas-consumption">Consommation</label><input id="gas-consumption" type="number" value="17000" /></div>
+                                        <div class="field"><label for="gas-unit">Unite</label><select id="gas-unit"><option value="m3">m3</option><option value="kwh">kWh</option></select></div>
+                                        <div class="field"><label for="gas-cost">Montant</label><input id="gas-cost" type="number" value="21000" /></div>
+                                        <div class="field"><label for="gas-note">Lecture</label><input id="gas-note" value="Laboratoires" /></div>
+                                    </div>
+                                    <div class="utility-row">
+                                        <div class="utility-type">Water</div>
+                                        <div class="field"><label for="water-consumption">Consommation</label><input id="water-consumption" type="number" value="6800" /></div>
+                                        <div class="field"><label for="water-unit">Unite</label><select id="water-unit"><option value="m3">m3</option></select></div>
+                                        <div class="field"><label for="water-cost">Montant</label><input id="water-cost" type="number" value="9200" /></div>
+                                        <div class="field"><label for="water-note">Lecture</label><input id="water-note" value="Bloc pedagogique" /></div>
+                                    </div>
+                                </div>
+
+                                <div class="toolbar">
+                                    <button class="primary-btn" id="compute-scorecard-btn" type="button">Compute CO2 Scorecard</button>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="panel" id="rse">
+                            <div class="panel-head">
+                                <div>
+                                    <div class="panel-title">Actes RSE & Fiabilite</div>
+                                    <div class="panel-copy">Ajoute les initiatives RSE documentees par l'institut. Chaque action influence le CO2 optimise, avec ponderation par presence de justificatif et niveau de confiance.</div>
+                                </div>
+                            </div>
+                            <div class="panel-body">
+                                <div class="initiative-list" id="initiative-list"></div>
+                                <div class="toolbar">
+                                    <button class="soft-btn" id="add-initiative-btn" type="button">Add RSE Action</button>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="panel" id="ocr">
+                            <div class="panel-head">
+                                <div>
+                                    <div class="panel-title">OCR & Documents Source</div>
+                                    <div class="panel-copy">Colle le texte OCR d'un document ou charge un justificatif. Le parser extrait les donnees brutes puis tu peux les reutiliser dans les modules consommation et RSE.</div>
+                                </div>
+                            </div>
+                            <div class="panel-body">
+                                <div class="form-grid">
+                                    <div class="field">
+                                        <label for="ocr-doc-type">Document Type</label>
+                                        <select id="ocr-doc-type">
+                                            <option value="electricity_bill">Electricity Bill</option>
+                                            <option value="gas_bill">Gas Bill</option>
+                                            <option value="water_bill">Water Bill</option>
+                                            <option value="rse_proof">RSE Proof</option>
+                                            <option value="generic">Generic</option>
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label for="ocr-filename">Filename</label>
+                                        <input id="ocr-filename" value="facture-electricite-mai.pdf" />
+                                    </div>
+                                    <div class="field full">
+                                        <label for="ocr-text">OCR Text</label>
+                                        <textarea id="ocr-text">STEG Facture electricite mai 2026 consommation 18340 kWh montant 6240 DT campus principal.</textarea>
+                                    </div>
+                                </div>
+
+                                <div class="doc-upload">
+                                    <div>
+                                        <div class="panel-title" style="font-size:17px;">Upload justificatif</div>
+                                        <div class="tiny muted">Charge un PDF, une image ou un tableur pour analyse documentaire.</div>
+                                        <div id="uploaded-tags"></div>
+                                    </div>
+                                    <div class="toolbar" style="margin-top:0;">
+                                        <input id="upload-input" type="file" hidden />
+                                        <button class="soft-btn" id="upload-btn" type="button">Upload Document</button>
+                                        <button class="primary-btn" id="run-ocr-btn" type="button">Run OCR Extract</button>
+                                    </div>
+                                </div>
+
+                                <div class="toolbar">
+                                    <button class="soft-btn" id="apply-ocr-btn" type="button">Apply OCR to Utilities</button>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="panel" id="email">
+                            <div class="panel-head">
+                                <div>
+                                    <div class="panel-title">Empreinte Email</div>
+                                    <div class="panel-copy">Estime l'energie et le CO2 de la messagerie institutionnelle a partir du volume, des destinataires, des pieces jointes et du stockage sans lire le contenu des emails.</div>
+                                </div>
+                            </div>
+                            <div class="panel-body">
+                                <div class="email-grid">
+                                    <div class="utility-row">
+                                        <div class="utility-type">Email Load</div>
+                                        <div class="field"><label for="emails-sent">Emails envoyes</label><input id="emails-sent" type="number" value="68000" /></div>
+                                        <div class="field"><label for="avg-email-size">Taille moyenne KB</label><input id="avg-email-size" type="number" value="164" /></div>
+                                        <div class="field"><label for="attachments-count">Pieces jointes</label><input id="attachments-count" type="number" value="14000" /></div>
+                                        <div class="field"><label for="avg-attachment-size">PJ moyenne KB</label><input id="avg-attachment-size" type="number" value="720" /></div>
+                                    </div>
+                                    <div class="utility-row">
+                                        <div class="utility-type">Delivery</div>
+                                        <div class="field"><label for="avg-recipients">Destinataires moyens</label><input id="avg-recipients" type="number" step="0.1" value="2.1" /></div>
+                                        <div class="field"><label for="stored-days">Stockage jours</label><input id="stored-days" type="number" value="180" /></div>
+                                        <div class="field"><label for="email-period-label">Periode</label><input id="email-period-label" value="2026-S1" /></div>
+                                        <div class="field"><label for="mail-note">Unite</label><input id="mail-note" value="M365 / staff + administration" /></div>
+                                    </div>
+                                </div>
+
+                                <div class="toolbar">
+                                    <button class="primary-btn" id="compute-email-btn" type="button">Compute Email Footprint</button>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div class="stack">
+                        <section class="panel" id="scorecard">
+                            <div class="panel-head">
+                                <div>
+                                    <div class="panel-title">Score environnemental</div>
+                                    <div class="panel-copy">Vue synthetique du CO2 brut, du CO2 optimise et des trois sous-dimensions de performance environnementale.</div>
+                                </div>
+                            </div>
+                            <div class="panel-body">
+                                <div class="gauge">
+                                    <div class="gauge-ring" id="gaugeRing">
+                                        <div class="gauge-copy">
+                                            <div class="gauge-score" id="gaugeScore">--</div>
+                                            <div class="gauge-label">score /100</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="breakdown-list" id="subdimension-breakdown"><div class="empty">Aucun score calcule pour le moment.</div></div>
+                                <div class="trend-grid" id="timeline-grid"></div>
+                            </div>
+                        </section>
+
+                        <section class="panel">
+                            <div class="panel-head">
+                                <div>
+                                    <div class="panel-title">Decomposition par poste</div>
+                                    <div class="panel-copy">Part du CO2 brut attribuee a chaque utilite, avec intensite par personne et par metre carre.</div>
+                                </div>
+                            </div>
+                            <div class="panel-body">
+                                <div class="breakdown-list" id="utility-breakdown"><div class="empty">Le breakdown apparaitra apres execution du scorecard.</div></div>
+                            </div>
+                        </section>
+
+                        <section class="panel" id="email-results">
+                            <div class="panel-head">
+                                <div>
+                                    <div class="panel-title">Resultat empreinte email</div>
+                                    <div class="panel-copy">Impact numerique par periode, score de sobriete et methode de calcul.</div>
+                                </div>
+                            </div>
+                            <div class="panel-body">
+                                <div class="trend-grid" id="email-period-grid"><div class="empty">Aucune estimation email calculee.</div></div>
+                                <div class="method-list" id="email-method-list" style="margin-top:14px;"><div class="empty">La methode s'affichera apres calcul.</div></div>
+                            </div>
+                        </section>
+
+                        <section class="panel" id="documents">
+                            <div class="panel-head">
+                                <div>
+                                    <div class="panel-title">Documents & OCR output</div>
+                                    <div class="panel-copy">Suivi des justificatifs envoyes et des champs extraits automatiquement pour les reutiliser dans les workflows institut.</div>
+                                </div>
+                            </div>
+                            <div class="panel-body">
+                                <div class="doc-list" id="ocr-results"><div class="empty">Aucun document analyse pour l'instant.</div></div>
+                                <div class="doc-list" id="upload-results" style="margin-top:14px;"><div class="empty">Aucun upload recu pour l'instant.</div></div>
+                            </div>
+                        </section>
+
+                        <section class="panel">
+                            <div class="panel-head">
+                                <div>
+                                    <div class="panel-title">Insights moteur</div>
+                                    <div class="panel-copy">Lecture courte pour le doyen, le responsable patrimoine ou le coordinateur RSE.</div>
+                                </div>
+                            </div>
+                            <div class="panel-body">
+                                <div class="insight-list" id="insights-list"><div class="empty">Les recommandations apparaitront ici.</div></div>
+                            </div>
+                        </section>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const API = '/api/v1';
+        const state = { uploads: [], ocrExtraction: null, scorecard: null, emailFootprint: null, initiatives: [] };
+        const defaultInitiatives = [
+            { title: 'Solar rooftop tranche A', category: 'solar', description: 'Installation de panneaux photovoltaIques sur le bloc administratif.', estimated: 22000, proof: true, confidence: 0.91 },
+            { title: 'LED retrofit amphitheatres', category: 'lighting', description: 'Remplacement progressif de l eclairage traditionnel par LED.', estimated: 8600, proof: true, confidence: 0.74 }
+        ];
+
+        function $(id) { return document.getElementById(id); }
+        function safeNumber(value) { const num = Number(value); return Number.isFinite(num) ? num : 0; }
+        function escapeHtml(text) { return String(text).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;'); }
+        function formatCompact(value, suffix = '') { if (value === null || value === undefined || Number.isNaN(Number(value))) return '--'; const num = Number(value); if (Math.abs(num) >= 1000) return `${num.toLocaleString('fr-FR', { maximumFractionDigits: 1 })}${suffix}`; return `${num.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}${suffix}`; }
+        function verdictTone(verdict) { if (!verdict) return ''; if (verdict.includes('optimale') || verdict.includes('sobre')) return ''; if (verdict.includes('norme') || verdict.includes('modere')) return 'warning'; return 'danger'; }
+        function setPill(el, text, tone) { el.textContent = text; el.className = `status-pill${tone ? ` ${tone}` : ''}`; }
+        function toast(message) { const el = $('toast'); el.textContent = message; el.classList.add('show'); clearTimeout(window.__toastTimer); window.__toastTimer = setTimeout(() => el.classList.remove('show'), 2800); }
+
+        function renderInitiatives() {
+            const host = $('initiative-list');
+            host.innerHTML = state.initiatives.map((item, index) => `
+                <div class="initiative-row">
+                    <div class="field"><label>Titre</label><input data-index="${index}" data-key="title" value="${escapeHtml(item.title)}" /></div>
+                    <div class="field"><label>Categorie</label><select data-index="${index}" data-key="category">${['solar', 'lighting', 'waste', 'water', 'mobility', 'other'].map(option => `<option value="${option}" ${item.category === option ? 'selected' : ''}>${option}</option>`).join('')}</select></div>
+                    <div class="field full"><label>Description</label><textarea data-index="${index}" data-key="description">${escapeHtml(item.description)}</textarea></div>
+                    <div class="field"><label>Reduction CO2 estimee kg</label><input type="number" data-index="${index}" data-key="estimated" value="${item.estimated}" /></div>
+                    <div class="field"><label>Confiance justificatif</label><input type="number" step="0.01" min="0" max="1" data-index="${index}" data-key="confidence" value="${item.confidence}" /></div>
+                    <div class="field"><label>Justificatif present</label><select data-index="${index}" data-key="proof"><option value="true" ${item.proof ? 'selected' : ''}>true</option><option value="false" ${!item.proof ? 'selected' : ''}>false</option></select></div>
+                    <div class="field"><label>Action</label><button class="soft-btn" type="button" onclick="removeInitiative(${index})">Remove</button></div>
+                </div>`).join('');
+        }
+
+        function removeInitiative(index) { state.initiatives.splice(index, 1); renderInitiatives(); }
+        window.removeInitiative = removeInitiative;
+
+        function collectInitiatives() {
+            document.querySelectorAll('#initiative-list [data-index]').forEach((input) => {
+                const index = Number(input.dataset.index);
+                const key = input.dataset.key;
+                let value = input.value;
+                if (key === 'estimated' || key === 'confidence') value = safeNumber(value);
+                if (key === 'proof') value = value === 'true';
+                state.initiatives[index][key] = value;
+            });
+            return state.initiatives.map((item) => ({
+                title: item.title,
+                category: item.category,
+                description: item.description,
+                estimated_co2_reduction_kg: safeNumber(item.estimated),
+                proof_document_present: Boolean(item.proof),
+                proof_confidence: safeNumber(item.confidence),
+            }));
+        }
+
+        function collectProfile() {
+            const institutionName = $('institution-name').value.trim();
+            $('sidebarInstituteName').textContent = institutionName || 'Institut UCAR';
+            return {
+                institution_id: $('institution-id').value.trim() || 'ucar-institute',
+                institution_name: institutionName || 'Institut UCAR',
+                surface_m2: safeNumber($('surface-m2').value),
+                students_count: safeNumber($('students-count').value),
+                employees_count: safeNumber($('employees-count').value),
+                utility_bills: [
+                    { utility_type: 'electricity', period_label: $('period-label').value.trim() || '2026-S1', consumption_value: safeNumber($('electricity-consumption').value), consumption_unit: $('electricity-unit').value, invoice_amount: safeNumber($('electricity-cost').value) },
+                    { utility_type: 'gas', period_label: $('period-label').value.trim() || '2026-S1', consumption_value: safeNumber($('gas-consumption').value), consumption_unit: $('gas-unit').value, invoice_amount: safeNumber($('gas-cost').value) },
+                    { utility_type: 'water', period_label: $('period-label').value.trim() || '2026-S1', consumption_value: safeNumber($('water-consumption').value), consumption_unit: $('water-unit').value, invoice_amount: safeNumber($('water-cost').value) },
+                ],
+                rse_initiatives: collectInitiatives(),
+            };
+        }
+
+        function collectEmailPayload() {
+            return {
+                institution_id: $('institution-id').value.trim() || 'ucar-institute',
+                institution_name: $('institution-name').value.trim() || 'Institut UCAR',
+                students_count: safeNumber($('students-count').value),
+                employees_count: safeNumber($('employees-count').value),
+                email_metrics: [{ period_label: $('email-period-label').value.trim() || '2026-S1', emails_sent: safeNumber($('emails-sent').value), average_email_size_kb: safeNumber($('avg-email-size').value), attachments_count: safeNumber($('attachments-count').value), average_attachment_size_kb: safeNumber($('avg-attachment-size').value), average_recipients: safeNumber($('avg-recipients').value) || 1, stored_days: safeNumber($('stored-days').value) }],
+            };
+        }
+
+        async function parseJsonResponse(res) { const contentType = res.headers.get('content-type') || ''; if (contentType.includes('application/json')) return res.json(); const text = await res.text(); return { detail: text || `HTTP ${res.status}` }; }
+
+        async function runScorecard() {
+            const res = await fetch(`${API}/environment/scorecard`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(collectProfile()) });
+            const data = await parseJsonResponse(res);
+            if (!res.ok) throw new Error(data.detail || `Scorecard failed (${res.status})`);
+            state.scorecard = data;
+            renderScorecard();
+            toast('Score environnemental mis a jour.');
+        }
+
+        async function runEmailFootprint() {
+            const res = await fetch(`${API}/environment/email-footprint`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(collectEmailPayload()) });
+            const data = await parseJsonResponse(res);
+            if (!res.ok) throw new Error(data.detail || `Email footprint failed (${res.status})`);
+            state.emailFootprint = data;
+            renderEmailFootprint();
+            toast('Empreinte email calculee.');
+        }
+
+        async function runOCR() {
+            const payload = { institution_id: $('institution-id').value.trim() || 'ucar-institute', filename: $('ocr-filename').value.trim() || 'document.pdf', document_type: $('ocr-doc-type').value, period_label: $('period-label').value.trim() || '2026-S1', ocr_text: $('ocr-text').value };
+            const res = await fetch(`${API}/documents/ocr-extract`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            const data = await parseJsonResponse(res);
+            if (!res.ok) throw new Error(data.detail || `OCR failed (${res.status})`);
+            state.ocrExtraction = data;
+            renderOCRResult();
+            toast('Extraction OCR terminee.');
+        }
+
+        async function uploadDocument(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await fetch(`${API}/documents/upload`, { method: 'POST', body: formData });
+            const data = await parseJsonResponse(res);
+            if (!res.ok) throw new Error(data.detail || `Upload failed (${res.status})`);
+            state.uploads.unshift({ filename: data.document.filename, status: data.document.status, parser_name: data.document.parser_name || 'parser', preview: data.extraction_preview?.text_preview || '' });
+            $('docsCountValue').textContent = String(state.uploads.length);
+            renderUploads();
+            toast(`${file.name} charge et analyse.`);
+        }
+
+        function applyOCRToUtilities() {
+            if (!state.ocrExtraction) { toast('Lance d abord OCR extract.'); return; }
+            const payload = state.ocrExtraction.structured_payload || {};
+            if (payload.document_type === 'electricity_bill') { $('electricity-consumption').value = payload.consumption_value || $('electricity-consumption').value; $('electricity-cost').value = payload.invoice_amount || $('electricity-cost').value; }
+            if (payload.document_type === 'gas_bill') { $('gas-consumption').value = payload.consumption_value || $('gas-consumption').value; $('gas-cost').value = payload.invoice_amount || $('gas-cost').value; }
+            if (payload.document_type === 'water_bill') { $('water-consumption').value = payload.consumption_value || $('water-consumption').value; $('water-cost').value = payload.invoice_amount || $('water-cost').value; }
+            if (payload.document_type === 'rse_proof' && payload.rse_action) {
+                state.initiatives.unshift({ title: payload.rse_action.replaceAll('_', ' '), category: payload.rse_action.includes('solar') ? 'solar' : 'other', description: 'Action creee a partir de l OCR.', estimated: 5000, proof: true, confidence: 0.7 });
+                renderInitiatives();
+            }
+            toast('Champs injectes dans les formulaires.');
+        }
+
+        function renderScorecard() {
+            const data = state.scorecard;
+            if (!data) return;
+            $('scoreValue').textContent = formatCompact(data.environmental_score);
+            $('scoreCaption').textContent = `${formatCompact(data.annualized_co2_per_person_kg, ' kg/personne/an')} contre benchmark ${formatCompact(data.benchmark_per_person_kg, ' kg')}.`;
+            $('optimizedValue').textContent = formatCompact(data.optimized_co2_kg, ' kg');
+            $('optimizedCaption').textContent = `Brut ${formatCompact(data.gross_co2_kg, ' kg')} · Reduction RSE ${formatCompact(data.total_rse_reduction_kg, ' kg')}`;
+            setPill($('scoreVerdictPill'), data.verdict, verdictTone(data.verdict));
+            $('gaugeScore').textContent = formatCompact(data.environmental_score);
+            $('gaugeRing').style.background = `conic-gradient(var(--gold) 0deg, var(--navy) ${Math.max(6, data.environmental_score * 3.6)}deg, rgba(228, 221, 210, 0.9) 0deg)`;
+            $('subdimension-breakdown').innerHTML = Object.entries(data.subdimension_scores).map(([key, value]) => `<div class="breakdown-row"><div class="breakdown-meta"><span>${key.replaceAll('_', ' ')}</span><strong>${formatCompact(value)}</strong></div><div class="bar"><span style="width:${Math.max(2, Number(value))}%;"></span></div></div>`).join('');
+            $('utility-breakdown').innerHTML = data.breakdown.map((item) => `<div class="breakdown-row"><div class="breakdown-meta"><span>${item.utility_type} · ${formatCompact(item.total_consumption)} ${item.normalized_unit}</span><strong>${formatCompact(item.co2_kg, ' kg')}</strong></div><div class="bar"><span style="width:${Math.max(3, item.share_percent)}%;"></span></div><div class="tiny muted">${formatCompact(item.intensity_per_person_kg, ' kg/pers')} · ${formatCompact(item.intensity_per_m2_kg, ' kg/m2')}</div></div>`).join('');
+            $('timeline-grid').innerHTML = data.timeline.map((item) => { const maxValue = Math.max(...data.timeline.map(entry => entry.gross_co2_kg), 1); const grossWidth = (item.gross_co2_kg / maxValue) * 100; const optimizedWidth = (item.optimized_co2_kg / maxValue) * 100; return `<div class="trend-line"><div>${item.period_label}</div><div class="trend-rail"><span class="gross" style="width:${grossWidth}%;"></span><span class="optimized" style="width:${Math.max(0, optimizedWidth - 1)}%;"></span></div><div>${formatCompact(item.optimized_co2_kg, ' kg')}</div></div>`; }).join('');
+            $('insights-list').innerHTML = data.insights.map((insight) => `<div class="insight-item">${escapeHtml(insight)}</div>`).join('');
+        }
+
+        function renderEmailFootprint() {
+            const data = state.emailFootprint;
+            if (!data) return;
+            $('emailScoreValue').textContent = formatCompact(data.digital_responsibility_score);
+            $('emailCaption').textContent = `${formatCompact(data.annualized_co2_per_person_kg, ' kg/personne/an')} · ${data.verdict}`;
+            $('email-period-grid').innerHTML = data.period_breakdown.map((item) => `<div class="timeline-item"><strong>${item.period_label}</strong><div class="tiny muted" style="margin-top:6px;">${formatCompact(item.emails_sent)} emails · ${formatCompact(item.average_recipients)} destinataires moyens</div><div class="tiny" style="margin-top:8px;">${formatCompact(item.estimated_energy_kwh, ' kWh')} · ${formatCompact(item.estimated_co2_kg, ' kg CO2')}</div></div>`).join('');
+            $('email-method-list').innerHTML = data.methodology.map((line) => `<div class="method-item">${escapeHtml(line)}</div>`).join('');
+        }
+
+        function renderOCRResult() {
+            const host = $('ocr-results');
+            const data = state.ocrExtraction;
+            if (!data) { host.innerHTML = '<div class="empty">Aucun document analyse pour l instant.</div>'; return; }
+            host.innerHTML = `<div class="doc-item"><strong>${escapeHtml(data.filename)}</strong><div class="tiny muted" style="margin-top:6px;">${escapeHtml(data.document_type)} · ${escapeHtml(data.status)} · confiance ${formatCompact(data.confidence)}</div><div style="margin-top:10px; line-height:1.6;">${escapeHtml(data.extracted_text_preview)}</div><div style="margin-top:10px;">${data.normalized_fields.map((field) => `<span class="doc-tag">${escapeHtml(field.name)}: ${escapeHtml(field.value)}</span>`).join('')}</div><div style="margin-top:10px;" class="tiny muted">${data.recommendations.map(escapeHtml).join(' · ')}</div></div>`;
+        }
+
+        function renderUploads() {
+            const host = $('upload-results');
+            if (!state.uploads.length) { host.innerHTML = '<div class="empty">Aucun upload recu pour l instant.</div>'; return; }
+            host.innerHTML = state.uploads.map((item) => `<div class="doc-item"><strong>${escapeHtml(item.filename)}</strong><div class="tiny muted" style="margin-top:6px;">${escapeHtml(item.status)} · ${escapeHtml(item.parser_name)}</div><div style="margin-top:10px; line-height:1.55;">${escapeHtml(item.preview || 'Apercu non disponible.')}</div></div>`).join('');
+        }
+
+        function fillSampleData() {
+            $('institution-id').value = 'ucar-ensi-green';
+            $('institution-name').value = 'ENSI Green Campus';
+            $('surface-m2').value = '9600';
+            $('students-count').value = '1630';
+            $('employees-count').value = '210';
+            $('period-label').value = '2026-S1';
+            $('electricity-consumption').value = '515000';
+            $('electricity-cost').value = '112000';
+            $('gas-consumption').value = '19000';
+            $('gas-cost').value = '23600';
+            $('water-consumption').value = '7600';
+            $('water-cost').value = '9900';
+            $('emails-sent').value = '84000';
+            $('avg-email-size').value = '172';
+            $('attachments-count').value = '18000';
+            $('avg-attachment-size').value = '840';
+            $('avg-recipients').value = '2.4';
+            $('stored-days').value = '180';
+            $('email-period-label').value = '2026-S1';
+            $('ocr-text').value = 'STEG Facture electricite juin 2026 consommation 21450 kWh montant 7420 DT bloc administratif et salles machine.';
+            state.initiatives = JSON.parse(JSON.stringify(defaultInitiatives));
+            renderInitiatives();
+            toast('Jeu de donnees institut charge.');
+        }
+
+        async function runFullAnalysis() {
+            try { await runOCR(); await runScorecard(); await runEmailFootprint(); toast('Analyse complete terminee.'); }
+            catch (error) { toast(error.message || 'Analyse interrompue.'); }
+        }
+
+        $('add-initiative-btn').addEventListener('click', () => { state.initiatives.push({ title: 'Nouvelle initiative', category: 'other', description: 'Description a completer.', estimated: 0, proof: false, confidence: 0.25 }); renderInitiatives(); });
+        $('compute-scorecard-btn').addEventListener('click', async () => { try { await runScorecard(); } catch (error) { toast(error.message || 'Erreur scorecard'); } });
+        $('compute-email-btn').addEventListener('click', async () => { try { await runEmailFootprint(); } catch (error) { toast(error.message || 'Erreur email footprint'); } });
+        $('run-ocr-btn').addEventListener('click', async () => { try { await runOCR(); } catch (error) { toast(error.message || 'Erreur OCR'); } });
+        $('apply-ocr-btn').addEventListener('click', applyOCRToUtilities);
+        $('fill-sample-btn').addEventListener('click', fillSampleData);
+        $('run-all-btn').addEventListener('click', runFullAnalysis);
+        $('upload-btn').addEventListener('click', () => $('upload-input').click());
+        $('upload-input').addEventListener('change', async (event) => {
+            const files = Array.from(event.target.files || []);
+            for (const file of files) { try { await uploadDocument(file); } catch (error) { toast(error.message || `Upload impossible pour ${file.name}`); } }
+            $('uploaded-tags').innerHTML = files.map(file => `<span class="doc-tag">${escapeHtml(file.name)}</span>`).join('');
+            event.target.value = '';
+        });
+
+        fillSampleData();
+        renderOCRResult();
+        renderUploads();
+    </script>
+</body>
+
+</html>
