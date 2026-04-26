@@ -10,49 +10,53 @@ from app.core.celery_app import celery_app
 from app.core.database import SessionLocal
 from app.modules.chatbot_automation.db_models import MailLog
 from app.modules.finance_partnerships_hr.db_models import Budget
+from app.modules.kpis.db_models import Alert, Institution
 
 
 @celery_app.task(name="app.modules.chatbot_automation.tasks.detect_dropout_anomalies")
 def detect_dropout_anomalies():
     """
     Task to detect dropout rate anomalies and create proposed mail logs.
-    In a real scenario, this would query student data and calculate rates.
+    Fetches real active alerts from the database.
     """
     db = SessionLocal()
     try:
-        # Mocking anomaly detection for the demo
-        # Imagine we found 3 institutions with high dropout rates
-        anomalies = [
-            {
-                "institution": "Polytechnique School",
-                "dropout_rate": 0.15,
-                "director_email": "director@poly.edu",
-            },
-            {
-                "institution": "Medical Faculty",
-                "dropout_rate": 0.22,
-                "director_email": "dean@med.edu",
-            },
-            {
-                "institution": "Business School",
-                "dropout_rate": 0.18,
-                "director_email": "admin@business.edu",
-            },
-        ]
-
+        # Fetch active alerts from the database
+        db_alerts = db.query(Alert).filter(Alert.status == "active").all()
+        
         created_logs = []
-        for anomaly in anomalies:
+        for alert in db_alerts:
+            # Check if we already have a mail log for this alert to avoid duplicates
+            existing = db.query(MailLog).filter(
+                MailLog.anomaly_details["alert_id"].astext == str(alert.id)
+            ).first()
+            
+            if existing:
+                continue
+
+            # Find the institution contact email
+            institution = db.query(Institution).filter(Institution.id == alert.institution_id).first()
+            recipient = institution.contact_email if institution and institution.contact_email else "admin@ucar.tn"
+
             log = MailLog(
-                anomaly_type="dropout_rate",
-                anomaly_details=anomaly,
-                recipient_email=anomaly["director_email"],
+                anomaly_type=alert.severity if alert.severity else "critical_kpi",
+                anomaly_details={
+                    "alert_id": str(alert.id),
+                    "title": alert.title,
+                    "message": alert.message,
+                    "institution": institution.name if institution else "Unknown",
+                    "actual_value": alert.actual_value,
+                    "threshold": alert.threshold_value,
+                    "xai_explanation": alert.xai_explanation
+                },
+                recipient_email=recipient,
                 status="proposed",
             )
             db.add(log)
             created_logs.append(log)
         
         db.commit()
-        return f"Detected {len(anomalies)} anomalies"
+        return f"Converted {len(created_logs)} database alerts to mailing workflows"
     finally:
         db.close()
 

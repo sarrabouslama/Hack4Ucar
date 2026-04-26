@@ -31,6 +31,7 @@ def _serialize(document) -> DocumentResponse:
         parser_name=document.parser_name,
         error_message=document.error_message,
         file_path=document.file_path,
+        module_classification=document.module_classification,
         created_at=document.created_at,
         updated_at=document.updated_at,
     )
