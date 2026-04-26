@@ -159,19 +159,6 @@ class Badge(BaseModel):
     score = Column(Float, nullable=True)
 
 
-class KpiMetric(BaseModel):
-    """Generic KPI metric store, including forecast values."""
+from app.modules.kpis.db_models import KPIMetric as KpiMetric
 
-    __tablename__ = "kpi_metrics"
-    __table_args__ = {'extend_existing': True}
-
-    institution_id = Column(String(100), nullable=True)
-    domain = Column(String(100), nullable=False)
-    indicator = Column(String(100), nullable=False)
-    metric_value = Column(Float, nullable=False)
-    recorded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    is_forecast = Column(Boolean, default=False, nullable=False)
-    forecast_horizon_days = Column(Integer, nullable=True)
-    lower_bound = Column(Float, nullable=True)
-    upper_bound = Column(Float, nullable=True)
-    source = Column(String(100), nullable=True)
+# Keep other models...

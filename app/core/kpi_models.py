@@ -69,36 +69,7 @@ class Institution(Base):
     documents = relationship("Document", back_populates="institution")
 
 
-class KPIMetric(Base):
-    """Centralized KPI Metric Model"""
-    __tablename__ = "kpi_metrics"
-    __table_args__ = {'extend_existing': True}
-
-    id = Column(UUID(as_uuid=True), primary_key=True)
-    institution_id = Column(UUID(as_uuid=True), ForeignKey("institutions.id"), nullable=False)
-    
-    # KPI Definition
-    domain = Column(SQLEnum(KPI_DOMAIN), nullable=False)  # academic, finance, hr, etc.
-    indicator = Column(String(100), nullable=False)  # e.g., "success_rate", "budget_consumed"
-    period = Column(SQLEnum(KPI_PERIOD), nullable=False)  # monthly, semestrial, annual
-    
-    # Value
-    value = Column(Float, nullable=False)
-    unit = Column(String(50))  # %, number, currency, etc.
-    
-    # Metadata
-    reporting_date = Column(DateTime, nullable=False)
-    data_source = Column(String(100))  # manual, ocr, api
-    notes = Column(Text)
-    
-    # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Relationships
-    institution = relationship("Institution", back_populates="kpis")
-    predictions = relationship("KPIPrediction", back_populates="kpi_metric")
-    alerts = relationship("Alert", back_populates="kpi_metric")
+from app.modules.kpis.db_models import KPIMetric
 
     def to_dict(self):
         return {
