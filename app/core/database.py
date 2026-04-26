@@ -42,10 +42,10 @@ class Database:
 
     async def connect(self) -> None:
         """Initialize database connection"""
-        # Test connection
+        from sqlalchemy import text
         try:
             with self.engine.connect() as connection:
-                connection.execute("SELECT 1")
+                connection.execute(text("SELECT 1"))
                 print("✓ Database connection successful")
         except Exception as e:
             print(f"✗ Database connection failed: {e}")
