@@ -7,11 +7,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.core.database import db
+from app.modules.chatbot_automation.routes import router as chatbot_router
 from app.modules.documents_ingestion.routes import router as documents_router
 from app.modules.education_research.routes import router as education_router
-from app.modules.finance_partnerships_hr.routes import router as finance_router
 from app.modules.environment_infrastructure.routes import router as environment_router
-from app.modules.chatbot_automation.routes import router as chatbot_router
+from app.modules.finance_partnerships_hr.routes import router as finance_router
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -39,25 +39,28 @@ app.include_router(chatbot_router, prefix="/api/v1/chatbot", tags=["chatbot"])
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database connection on startup"""
+    """Initialize database connection on startup."""
+
     try:
         await db.connect()
-        print("✓ Application startup complete")
+        print("[OK] Application startup complete")
     except Exception as e:
-        print(f"✗ Startup error: {e}")
+        print(f"[ERROR] Startup error: {e}")
         raise
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Close database connection on shutdown"""
+    """Close database connection on shutdown."""
+
     await db.disconnect()
-    print("✓ Application shutdown complete")
+    print("[OK] Application shutdown complete")
 
 
 @app.get("/")
 async def root():
-    """Root endpoint"""
+    """Root endpoint."""
+
     return {
         "message": "Welcome to Hack4Ucar AI Modules",
         "version": "0.1.0",
@@ -67,7 +70,8 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """Health check endpoint."""
+
     return {"status": "healthy"}
 
 
