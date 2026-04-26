@@ -1,6 +1,4 @@
-"""
-Pydantic models for documents ingestion
-"""
+"""Pydantic models for documents ingestion."""
 
 from datetime import datetime
 from typing import Any, Dict, List, Optional

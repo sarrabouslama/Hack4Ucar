@@ -1,31 +1,34 @@
-"""
-FastAPI application entry point
-"""
+"""FastAPI application entry point."""
 
 from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.core.database import db
-from app.modules.chatbot_automation.routes import router as chatbot_router
 from app.modules.documents_ingestion.routes import router as documents_router
 from app.modules.education_research.routes import router as education_router
-from app.modules.environment_infrastructure.routes import router as environment_router
 from app.modules.finance_partnerships_hr.routes import router as finance_router
+from app.modules.environment_infrastructure.routes import router as environment_router
+from app.modules.chatbot_automation.routes import router as chatbot_router
 
-# Initialize FastAPI app
+
+# Modules actifs
+from app.modules.kpis.routes import router as kpi_router
+from app.modules.academic.routes import router as academic_router
+
+
 app = FastAPI(
     title="Hack4Ucar AI Modules",
     description="Domain-first AI modules for integrated university management",
     version="0.1.0",
 )
 
-# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -37,17 +40,23 @@ app.include_router(education_router, prefix="/api/v1/education", tags=["educatio
 app.include_router(finance_router, prefix="/api/v1/finance", tags=["finance"])
 app.include_router(environment_router, prefix="/api/v1/environment", tags=["environment"])
 app.include_router(chatbot_router, prefix="/api/v1/chatbot", tags=["chatbot"])
+app.include_router(kpi_router, tags=["KPIs"])
+app.include_router(academic_router, tags=["Academic AI"])
 
-# Mount static files for frontend
+
 frontend_path = Path(__file__).parent / "frontend"
 if frontend_path.exists():
     app.mount("/", StaticFiles(directory=str(frontend_path), html=True), name="frontend")
+
 
 @app.on_event("startup")
 async def startup_event():
     """Initialize database connection on startup."""
 
     try:
+        if settings.SKIP_DB_STARTUP:
+            print("[OK] SKIP_DB_STARTUP enabled, database startup skipped")
+            return
         await db.connect()
         db.create_documents_table()
         db.create_chatbot_tables()
@@ -56,23 +65,13 @@ async def startup_event():
         print(f"[ERROR] Startup error: {e}")
         raise
 
+
 @app.on_event("shutdown")
 async def shutdown_event():
     """Close database connection on shutdown."""
 
     await db.disconnect()
     print("[OK] Application shutdown complete")
-
-
-@app.get("/")
-async def root():
-    """Root endpoint."""
-
-    return {
-        "message": "Welcome to Hack4Ucar AI Modules",
-        "version": "0.1.0",
-        "docs": "/docs",
-    }
 
 
 @app.get("/health")

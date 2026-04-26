@@ -1,17 +1,15 @@
-"""
-API routes for documents ingestion
-"""
+"""API routes for documents ingestion."""
 
 from uuid import UUID
-
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
-from app.config import settings
 from app.core.database import get_db
 from app.modules.documents_ingestion.models import (
     DocumentListResponse,
     DocumentResponse,
+    OCRDocumentRequest,
+    OCRExtractionResponse,
     UploadDocumentResponse,
 )
 from app.modules.documents_ingestion.services import documents_service
@@ -35,6 +33,13 @@ def _serialize(document) -> DocumentResponse:
         created_at=document.created_at,
         updated_at=document.updated_at,
     )
+
+
+@router.post("/ocr-extract", response_model=OCRExtractionResponse)
+async def extract_document(payload: OCRDocumentRequest) -> OCRExtractionResponse:
+    """Normalize scanned-document OCR output into structured ESG data."""
+
+    return documents_service.extract_document_data(payload)
 
 
 @router.post("/upload", response_model=UploadDocumentResponse)
@@ -65,3 +70,17 @@ async def get_document(document_id: UUID, db: Session = Depends(get_db)):
     """Fetch one document by id."""
 
     return _serialize(documents_service.get_document(db, document_id))
+
+@router.get("/search", response_model=DocumentListResponse)
+async def search_documents(
+    query: str, 
+    limit: int = 5, 
+    doc_type: str = None, 
+    db: Session = Depends(get_db)
+):
+    """
+    Search documents using hybrid semantic + full-text search.
+    """
+    results = await documents_service.hybrid_search(db, query, limit=limit, doc_type=doc_type)
+    items = [_serialize(document) for document in results]
+    return DocumentListResponse(items=items)

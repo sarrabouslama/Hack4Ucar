@@ -3,30 +3,112 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from uuid import UUID, uuid4
 
 from fastapi import HTTPException, UploadFile
+from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 
 from app.modules.documents_ingestion.db_models import Document, DocumentStatus
-from app.modules.documents_ingestion.models import ExtractionResult
+from app.modules.documents_ingestion.models import (
+    ExtractionResult,
+    OCRDocumentRequest,
+    OCRExtractionField,
+    OCRExtractionResponse,
+)
 from app.modules.documents_ingestion.parsers import CONTENT_TYPE_TO_EXTENSION, PARSERS_BY_EXTENSION, SUPPORTED_EXTENSIONS
+from app.core.ai_service import ai_service
 
 ParserFunction = Callable[[Path], ExtractionResult]
 
 
 class DocumentIngestionService:
-    """Service responsible for upload persistence and document parsing."""
+    """Service responsible for OCR normalization and document parsing."""
 
     SUPPORTED_EXTENSIONS = SUPPORTED_EXTENSIONS
+
+    _DOCUMENT_HINTS = {
+        "electricity_bill": ["kwh", "electricite", "electricity", "energie"],
+        "gas_bill": ["gaz", "gas", "m3", "kwh pci"],
+        "water_bill": ["eau", "water", "m3", "sonede"],
+        "rse_proof": ["installation", "panneau", "solar", "led", "compost", "certificat"],
+    }
 
     def __init__(self, storage_dir: str = "storage/documents") -> None:
         self.storage_root = Path(storage_dir)
         self.storage_root.mkdir(parents=True, exist_ok=True)
+
+    def extract_document_data(self, payload: OCRDocumentRequest) -> OCRExtractionResponse:
+        """Convert OCR text into normalized fields used by the ESG scoring engine."""
+
+        lowered_text = payload.ocr_text.lower()
+        normalized_fields: List[OCRExtractionField] = []
+        structured_payload: Dict[str, str | float | int | bool] = {
+            "institution_id": payload.institution_id,
+            "document_type": payload.document_type,
+        }
+
+        amount = self._find_number_before_unit(lowered_text, ["dt", "tnd", "eur", "$"])
+        consumption = self._extract_consumption(payload.document_type, lowered_text)
+        if amount is not None:
+            normalized_fields.append(
+                OCRExtractionField(
+                    name="invoice_amount",
+                    value=amount,
+                    confidence=0.91,
+                    source_fragment="currency amount",
+                )
+            )
+            structured_payload["invoice_amount"] = amount
+        if consumption is not None:
+            normalized_fields.append(
+                OCRExtractionField(
+                    name="consumption",
+                    value=consumption["value"],
+                    confidence=consumption["confidence"],
+                    source_fragment=consumption["unit"],
+                )
+            )
+            structured_payload["consumption_value"] = consumption["value"]
+            structured_payload["consumption_unit"] = consumption["unit"]
+
+        action = self._extract_rse_action(lowered_text)
+        if action:
+            normalized_fields.append(
+                OCRExtractionField(
+                    name="rse_action",
+                    value=action,
+                    confidence=0.85,
+                    source_fragment=action,
+                )
+            )
+            structured_payload["rse_action"] = action
+
+        document_matches = sum(
+            1 for hint in self._DOCUMENT_HINTS.get(payload.document_type, []) if hint in lowered_text
+        )
+        confidence = min(0.55 + 0.1 * len(normalized_fields) + 0.05 * document_matches, 0.99)
+        status = "processed" if normalized_fields else "needs_review"
+        recommendations = self._build_recommendations(payload.document_type, normalized_fields)
+        preview = payload.ocr_text[:220]
+        if len(payload.ocr_text) > 220:
+            preview += "..."
+
+        return OCRExtractionResponse(
+            filename=payload.filename,
+            document_type=payload.document_type,
+            status=status,
+            confidence=round(confidence, 2),
+            extracted_text_preview=preview,
+            normalized_fields=normalized_fields,
+            structured_payload=structured_payload,
+            recommendations=recommendations,
+        )
 
     async def upload_and_process(self, db: Session, file: UploadFile) -> Document:
         """Store an uploaded file, parse it, and persist the extraction result."""
@@ -50,6 +132,13 @@ class DocumentIngestionService:
             document.extracted_data = json.dumps(self._serialize_extraction(extraction))
             document.parser_name = extraction.metadata.parser
             document.error_message = None
+            
+            # Generate embeddings for semantic search
+            if document.extracted_text:
+                try:
+                    document.embedding = await ai_service.get_embeddings(document.extracted_text[:3000])
+                except Exception as e:
+                    print(f"Warning: Could not generate embedding: {e}")
         except Exception as exc:
             document.status = DocumentStatus.FAILED.value
             document.parser_name = "failed"
@@ -73,6 +162,42 @@ class DocumentIngestionService:
         if not document:
             raise HTTPException(status_code=404, detail="Document not found")
         return document
+
+    async def hybrid_search(
+        self, 
+        db: Session, 
+        query: str, 
+        limit: int = 5,
+        doc_type: str = None
+    ) -> List[Document]:
+        """
+        Perform search using full-text search and metadata filters.
+        (Vector similarity is currently stored as JSON for compatibility).
+        """
+        if not query:
+            return []
+
+        # Full-text search part
+        ts_query = func.plainto_tsquery("french", query)
+        text_rank = func.ts_rank(Document.search_vector, ts_query).label("text_rank")
+
+        results_query = db.query(Document).filter(
+            (Document.status == DocumentStatus.PROCESSED.value)
+        )
+
+        if doc_type:
+            results_query = results_query.filter(Document.content_type.ilike(f"%{doc_type}%"))
+
+        # In this compatibility version, we mainly use text rank
+        results = (
+            results_query
+            .filter(Document.search_vector.op("@@")(ts_query))
+            .order_by(text_rank.desc())
+            .limit(limit)
+            .all()
+        )
+        
+        return results
 
     async def process_upload_preview(self, file: UploadFile) -> Dict[str, Any]:
         """Parse an uploaded file without persisting it to the database."""
@@ -118,6 +243,56 @@ class DocumentIngestionService:
         """Run the parser selected for an uploaded file."""
 
         return parser(file_path)
+
+    def _extract_consumption(self, document_type: str, text: str) -> Optional[Dict[str, str | float]]:
+        patterns = {
+            "electricity_bill": [("kwh", ["kwh", "kw/h"])],
+            "gas_bill": [("m3", ["m3"]), ("kwh", ["kwh"])],
+            "water_bill": [("m3", ["m3"])],
+        }
+        for normalized_unit, aliases in patterns.get(document_type, []):
+            value = self._find_number_before_unit(text, aliases)
+            if value is not None:
+                return {
+                    "value": value,
+                    "unit": normalized_unit,
+                    "confidence": 0.93 if normalized_unit in text else 0.88,
+                }
+        return None
+
+    def _extract_rse_action(self, text: str) -> Optional[str]:
+        actions = {
+            "solar_panels": ["panneau solaire", "panneaux solaires", "solar panel"],
+            "led_retrofit": ["led", "ampoule led", "eclairage led"],
+            "composting": ["compost", "compostage"],
+            "water_reuse": ["reutilisation eau", "recycled water", "reuse water"],
+        }
+        for action, keywords in actions.items():
+            if any(keyword in text for keyword in keywords):
+                return action
+        return None
+
+    def _build_recommendations(self, document_type: str, fields: List[OCRExtractionField]) -> List[str]:
+        field_names = {field.name for field in fields}
+        recommendations: List[str] = []
+        if "consumption" not in field_names and document_type in {"electricity_bill", "gas_bill", "water_bill"}:
+            recommendations.append("Verifier la lisibilite du document: consommation non detectee.")
+        if "invoice_amount" not in field_names:
+            recommendations.append("Ajouter un scan plus net pour extraire le montant de la facture.")
+        if document_type == "rse_proof" and "rse_action" not in field_names:
+            recommendations.append("Completer la description de l'acte RSE pour faciliter la verification.")
+        if not recommendations:
+            recommendations.append("Document exploitable pour le calcul ESG et le controle de fiabilite.")
+        return recommendations
+
+    @staticmethod
+    def _find_number_before_unit(text: str, units: List[str]) -> Optional[float]:
+        for unit in units:
+            pattern = rf"(\d+(?:[.,]\d+)?)\s*{re.escape(unit)}"
+            match = re.search(pattern, text)
+            if match:
+                return float(match.group(1).replace(",", "."))
+        return None
 
     def _resolve_parser(self, filename: str | None, content_type: str | None) -> Tuple[str, ParserFunction]:
         """Resolve which parser to use from content type or filename."""
@@ -203,150 +378,4 @@ class DocumentIngestionService:
 
 
 documents_service = DocumentIngestionService()
-
-""" 
-Business logic for documents ingestion
-
-import re
-from typing import Dict, List, Optional
-
-from app.modules.documents_ingestion.models import (
-    OCRDocumentRequest,
-    OCRExtractionField,
-    OCRExtractionResponse,
-)
-
-
-class DocumentIngestionService:
-    # OCR normalization service for university documents.
-
-    _DOCUMENT_HINTS = {
-        "electricity_bill": ["kwh", "electricite", "electricity", "energie"],
-        "gas_bill": ["gaz", "gas", "m3", "kwh pci"],
-        "water_bill": ["eau", "water", "m3", "sonede"],
-        "rse_proof": ["installation", "panneau", "solar", "led", "compost", "certificat"],
-    }
-
-    def extract_document_data(self, payload: OCRDocumentRequest) -> OCRExtractionResponse:
-        #Convert OCR text into normalized fields used by the ESG scoring engine.
-
-        lowered_text = payload.ocr_text.lower()
-        normalized_fields: List[OCRExtractionField] = []
-        structured_payload: Dict[str, str | float | int | bool] = {
-            "institution_id": payload.institution_id,
-            "document_type": payload.document_type,
-        }
-
-        amount = self._find_number_before_unit(lowered_text, ["dt", "tnd", "eur", "$"])
-        consumption = self._extract_consumption(payload.document_type, lowered_text)
-        if amount is not None:
-            normalized_fields.append(
-                OCRExtractionField(
-                    name="invoice_amount",
-                    value=amount,
-                    confidence=0.91,
-                    source_fragment="currency amount",
-                )
-            )
-            structured_payload["invoice_amount"] = amount
-        if consumption is not None:
-            normalized_fields.append(
-                OCRExtractionField(
-                    name="consumption",
-                    value=consumption["value"],
-                    confidence=consumption["confidence"],
-                    source_fragment=consumption["unit"],
-                )
-            )
-            structured_payload["consumption_value"] = consumption["value"]
-            structured_payload["consumption_unit"] = consumption["unit"]
-
-        action = self._extract_rse_action(lowered_text)
-        if action:
-            normalized_fields.append(
-                OCRExtractionField(
-                    name="rse_action",
-                    value=action,
-                    confidence=0.85,
-                    source_fragment=action,
-                )
-            )
-            structured_payload["rse_action"] = action
-
-        document_matches = sum(
-            1 for hint in self._DOCUMENT_HINTS.get(payload.document_type, []) if hint in lowered_text
-        )
-        confidence = min(0.55 + 0.1 * len(normalized_fields) + 0.05 * document_matches, 0.99)
-        status = "processed" if normalized_fields else "needs_review"
-        recommendations = self._build_recommendations(payload.document_type, normalized_fields)
-        preview = payload.ocr_text[:220]
-        if len(payload.ocr_text) > 220:
-            preview += "..."
-
-        return OCRExtractionResponse(
-            filename=payload.filename,
-            document_type=payload.document_type,
-            status=status,
-            confidence=round(confidence, 2),
-            extracted_text_preview=preview,
-            normalized_fields=normalized_fields,
-            structured_payload=structured_payload,
-            recommendations=recommendations,
-        )
-
-    def _extract_consumption(self, document_type: str, text: str) -> Optional[Dict[str, str | float]]:
-        patterns = {
-            "electricity_bill": [("kwh", ["kwh", "kw/h"])],
-            "gas_bill": [("m3", ["m3"]), ("kwh", ["kwh"])],
-            "water_bill": [("m3", ["m3"])],
-        }
-        for normalized_unit, aliases in patterns.get(document_type, []):
-            value = self._find_number_before_unit(text, aliases)
-            if value is not None:
-                return {
-                    "value": value,
-                    "unit": normalized_unit,
-                    "confidence": 0.93 if normalized_unit in text else 0.88,
-                }
-        return None
-
-    def _extract_rse_action(self, text: str) -> Optional[str]:
-        actions = {
-            "solar_panels": ["panneau solaire", "panneaux solaires", "solar panel"],
-            "led_retrofit": ["led", "ampoule led", "eclairage led"],
-            "composting": ["compost", "compostage"],
-            "water_reuse": ["reutilisation eau", "recycled water", "reuse water"],
-        }
-        for action, keywords in actions.items():
-            if any(keyword in text for keyword in keywords):
-                return action
-        return None
-
-    def _build_recommendations(
-        self,
-        document_type: str,
-        fields: List[OCRExtractionField],
-    ) -> List[str]:
-        field_names = {field.name for field in fields}
-        recommendations: List[str] = []
-        if "consumption" not in field_names and document_type in {"electricity_bill", "gas_bill", "water_bill"}:
-            recommendations.append("Verifier la lisibilite du document: consommation non detectee.")
-        if "invoice_amount" not in field_names:
-            recommendations.append("Ajouter un scan plus net pour extraire le montant de la facture.")
-        if document_type == "rse_proof" and "rse_action" not in field_names:
-            recommendations.append("Completer la description de l'acte RSE pour faciliter la verification.")
-        if not recommendations:
-            recommendations.append("Document exploitable pour le calcul ESG et le controle de fiabilite.")
-        return recommendations
-
-    def _find_number_before_unit(self, text: str, units: List[str]) -> Optional[float]:
-        for unit in units:
-            pattern = rf"(\d+(?:[.,]\d+)?)\s*{re.escape(unit)}"
-            match = re.search(pattern, text)
-            if match:
-                return float(match.group(1).replace(",", "."))
-        return None
-
-
-document_ingestion_service = DocumentIngestionService()
- """
+document_ingestion_service = documents_service

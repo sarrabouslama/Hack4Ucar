@@ -3,6 +3,7 @@ Database models for chatbot and automation
 """
 
 from sqlalchemy import Column, String, DateTime, Text, Boolean, JSON
+from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
 
 from app.core.models import BaseModel
@@ -26,7 +27,7 @@ class ChatMessage(BaseModel):
 
     __tablename__ = "chat_messages"
 
-    session_id = Column(String, nullable=False)
+    session_id = Column(UUID(as_uuid=True), nullable=False)
     user_message = Column(Text, nullable=False)
     bot_response = Column(Text, nullable=False)
     message_timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -65,7 +66,7 @@ class WorkflowExecution(BaseModel):
 
     __tablename__ = "workflow_executions"
 
-    workflow_id = Column(String, nullable=False)
+    workflow_id = Column(UUID(as_uuid=True), nullable=False)
     execution_status = Column(String(50), nullable=False)  # running, completed, failed
     started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     completed_at = Column(DateTime, nullable=True)
@@ -84,3 +85,18 @@ class Orchestration(BaseModel):
     status = Column(String(50), default="inactive", nullable=False)
     last_executed = Column(DateTime, nullable=True)
     next_scheduled = Column(DateTime, nullable=True)
+
+
+class MailLog(BaseModel):
+    """Mail logs for automated workflows"""
+
+    __tablename__ = "mail_logs"
+
+    anomaly_type = Column(String(100), nullable=False)  # e.g., dropout_rate
+    anomaly_details = Column(JSON, nullable=False)
+    recipient_email = Column(String(255), nullable=False)
+    subject = Column(String(255), nullable=True)
+    body_plan = Column(Text, nullable=True)  # Proposed draft
+    status = Column(String(50), default="proposed", nullable=False)  # proposed, confirmed, sent, failed
+    sent_at = Column(DateTime, nullable=True)
+    error_message = Column(Text, nullable=True)

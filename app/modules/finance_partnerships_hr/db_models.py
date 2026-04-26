@@ -3,6 +3,7 @@ Database models for finance, partnerships, and HR
 """
 
 from sqlalchemy import Column, String, Integer, Float, DateTime, Text, Date
+from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
 
 from app.core.models import BaseModel
@@ -79,7 +80,7 @@ class Contract(BaseModel):
 
     __tablename__ = "contracts"
 
-    employee_id = Column(String, nullable=False)
+    employee_id = Column(UUID(as_uuid=True), nullable=False)
     contract_type = Column(String(100), nullable=False)  # permanent, temporary, etc.
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=True)
@@ -92,7 +93,7 @@ class Absenteeism(BaseModel):
 
     __tablename__ = "absenteeism"
 
-    employee_id = Column(String, nullable=False)
+    employee_id = Column(UUID(as_uuid=True), nullable=False)
     absence_date = Column(Date, nullable=False)
     reason = Column(String(100), nullable=True)
     hours_missed = Column(Float, default=8.0)
