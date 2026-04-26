@@ -8,7 +8,8 @@ from enum import Enum
 from typing import Optional
 
 from sqlalchemy import Column, String, DateTime, Float, Integer, ForeignKey, Text, Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import JSON as JSONB
+from sqlalchemy import Uuid as UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base

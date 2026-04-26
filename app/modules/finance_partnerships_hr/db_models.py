@@ -3,7 +3,7 @@ Database models for finance, partnerships, and HR
 """
 
 from sqlalchemy import Column, String, Integer, Float, DateTime, Text, Date
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Uuid as UUID
 from datetime import datetime
 
 from app.core.models import BaseModel

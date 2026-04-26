@@ -3,7 +3,7 @@ Database models for education research
 """
 
 from sqlalchemy import Column, String, Integer, Float, DateTime, Text, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Uuid as UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
