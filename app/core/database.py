@@ -67,6 +67,15 @@ class Database:
 
         Document.__table__.create(bind=self.engine, checkfirst=True)
 
+    def create_chatbot_tables(self) -> None:
+        """Create chatbot tables needed for conversation history."""
+
+        import_module("app.modules.chatbot_automation.db_models")
+        from app.modules.chatbot_automation.db_models import ChatMessage, ChatSession
+
+        ChatSession.__table__.create(bind=self.engine, checkfirst=True)
+        ChatMessage.__table__.create(bind=self.engine, checkfirst=True)
+
     @staticmethod
     def _import_model_modules() -> None:
         """Import all model modules so SQLAlchemy metadata is populated."""

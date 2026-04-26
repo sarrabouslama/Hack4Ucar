@@ -2,8 +2,11 @@
 
 from typing import Any, List
 
+from dotenv import load_dotenv
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
+
+load_dotenv()
 
 
 class Settings(BaseSettings):
@@ -17,13 +20,16 @@ class Settings(BaseSettings):
     # CORS settings
     CORS_ORIGINS: List[str]
 
-    # Database settings - Supabase/PostgreSQL
+    # Database settings - PostgreSQL
     DATABASE_URL: str
-    SUPABASE_URL: str = ""
-    SUPABASE_KEY: str = ""
 
     # API settings
     API_V1_PREFIX: str
+    SKIP_DB_STARTUP: bool = False
+
+    # Gemini settings
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.5-flash"
 
     @field_validator("DEBUG", mode="before")
     @classmethod
