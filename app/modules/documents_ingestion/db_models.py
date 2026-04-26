@@ -31,6 +31,7 @@ class Document(BaseModel):
     error_message = Column(Text, nullable=True)
     file_path = Column(String(500), nullable=True)
     module_classification = Column(String(255), nullable=True)
+    institution_id = Column(String(100), nullable=True)
     
 
     

@@ -1,35 +1,91 @@
 import { useState, useEffect, useRef } from 'react';
-import { getInstitutions, uploadDocument } from '../api/kpiApi';
+
+const API_BASE = '/api/v1';
+
+async function safeGet(url: string) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+async function getInstitutionsRaw() {
+  return safeGet(`${API_BASE}/kpis/institutions`);
+}
+
+async function uploadDocumentRaw(file: File, institutionId: string) {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(
+    `${API_BASE}/documents/upload?institution_id=${encodeURIComponent(institutionId)}`,
+    { method: 'POST', body: formData }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
+    throw new Error(err.detail || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+interface Institution {
+  id: string;
+  name: string;
+  code: string;
+  region?: string;
+}
+
+interface UploadRecord {
+  filename: string;
+  status: string;
+  parser_name: string;
+  preview: string;
+}
 
 export default function InstitutionDashboard() {
-  const [institutions, setInstitutions] = useState<any[]>([]);
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fetchingInstitutions, setFetchingInstitutions] = useState(true);
   const [success, setSuccess] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [uploads, setUploads] = useState<UploadRecord[]>([]);
+  const [institutionError, setInstitutionError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    getInstitutions().then(r => {
-      setInstitutions(r.data);
-      if (r.data.length > 0) setSelectedId(r.data[0].id);
-    });
+    setFetchingInstitutions(true);
+    getInstitutionsRaw()
+      .then((data: Institution[]) => {
+        setInstitutions(data || []);
+        if (data && data.length > 0) setSelectedId(data[0].id);
+      })
+      .catch((err) => {
+        setInstitutionError(err.message || 'Failed to load institutions');
+      })
+      .finally(() => setFetchingInstitutions(false));
   }, []);
 
   const handleFile = async (file: File) => {
-    if (!selectedId) {
-      alert("Veuillez sélectionner une institution");
+    if (!selectedId && institutions.length > 0) {
+      setError('Please select an institution');
       return;
     }
     setLoading(true);
     setError(null);
     setSuccess(null);
     try {
-      const res = await uploadDocument(file, selectedId);
-      setSuccess(res.data.document);
+      // If no institution selected, upload without institution_id
+      const res = await uploadDocumentRaw(file, selectedId);
+      setSuccess(res.document || res);
+      const newRecord: UploadRecord = {
+        filename: res.document?.filename || file.name,
+        status: res.document?.status || 'processed',
+        parser_name: res.document?.parser_name || 'parser',
+        preview: res.extraction_preview?.text_preview || '',
+      };
+      setUploads((prev) => [newRecord, ...prev]);
     } catch (err: any) {
-      setError(err.response?.data?.detail || err.message);
+      setError(err.message || 'Upload failed');
     } finally {
       setLoading(false);
     }
@@ -38,273 +94,429 @@ export default function InstitutionDashboard() {
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
+    setDragActive(e.type === 'dragenter' || e.type === 'dragover');
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
-    }
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFile(file);
   };
 
   return (
-    <div className="container animate-fade-in" style={{ maxWidth: '1400px', margin: '0 auto', padding: '40px 20px' }}>
-      
-      {/* Top Banner / Header */}
-      <div className="glass-panel" style={{ 
-        padding: '40px', 
-        borderRadius: '30px', 
-        marginBottom: '40px', 
-        background: 'linear-gradient(135deg, rgba(13, 27, 56, 0.95) 0%, rgba(30, 58, 110, 0.9) 100%)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.3)'
-      }}>
+    <div
+      style={{
+        maxWidth: '1400px',
+        margin: '0 auto',
+        padding: '40px 20px',
+        fontFamily: "'Syne', sans-serif",
+      }}
+    >
+      {/* Header Banner */}
+      <div
+        style={{
+          padding: '40px',
+          borderRadius: '24px',
+          marginBottom: '40px',
+          background: 'linear-gradient(135deg, #0d1b38 0%, #1e3a6e 100%)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '24px',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+        }}
+      >
         <div style={{ maxWidth: '60%' }}>
-          <h1 className="title" style={{ fontSize: '3.2rem', color: 'white', marginBottom: '10px', lineHeight: '1.1' }}>
-            Portail <span style={{ color: '#4facfe' }}>D'Ingestion</span> AI
+          <h1
+            style={{
+              fontFamily: "'Fraunces', serif",
+              fontSize: '2.4rem',
+              color: 'white',
+              marginBottom: '8px',
+              lineHeight: 1.1,
+            }}
+          >
+            Document Ingestion{' '}
+            <span style={{ color: '#e8c96a' }}>AI Portal</span>
           </h1>
-          <p className="subtitle" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1.1rem' }}>
-            Centralisez et automatisez l'extraction de vos KPIs académiques, financiers et environnementaux.
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1rem', margin: 0 }}>
+            Upload institutional documents — PDFs, Excel sheets, images — and let AI extract KPIs
+            automatically.
           </p>
         </div>
 
-        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', minWidth: '300px' }}>
-          <label style={{ fontSize: '10px', color: '#4facfe', fontWeight: '800', letterSpacing: '1px', display: 'block', marginBottom: '8px', textTransform: 'uppercase' }}>INSTITUTION CONNECTÉE</label>
-          <select 
-            className="form-select" 
-            value={selectedId} 
-            onChange={(e) => setSelectedId(e.target.value)}
-            style={{ 
-                background: 'transparent', 
-                border: 'none', 
-                color: 'white', 
-                fontSize: '18px', 
-                fontWeight: '600',
-                outline: 'none',
-                cursor: 'pointer',
-                width: '100%'
+        <div
+          style={{
+            background: 'rgba(255,255,255,0.06)',
+            padding: '20px 24px',
+            borderRadius: '16px',
+            border: '1px solid rgba(255,255,255,0.1)',
+            minWidth: '280px',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '10px',
+              color: '#e8c96a',
+              fontWeight: 700,
+              letterSpacing: '1px',
+              textTransform: 'uppercase',
+              marginBottom: '8px',
+              fontFamily: "'DM Mono', monospace",
             }}
           >
-            <option value="" style={{background: '#111'}}>Sélectionner institution...</option>
-            {institutions.map(inst => (
-              <option key={inst.id} value={inst.id} style={{background: '#111'}}>{inst.name}</option>
-            ))}
-          </select>
+            Connected Institution
+          </div>
+
+          {fetchingInstitutions ? (
+            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>
+              Loading institutions...
+            </div>
+          ) : institutionError ? (
+            <div style={{ color: '#f87171', fontSize: '13px' }}>
+              ⚠ {institutionError}
+              <br />
+              <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>
+                Make sure the backend is running and DB is seeded.
+              </span>
+            </div>
+          ) : institutions.length === 0 ? (
+            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>
+              No institutions found.{' '}
+              <span style={{ color: 'rgba(255,255,255,0.3)' }}>
+                Run seed script first.
+              </span>
+            </div>
+          ) : (
+            <select
+              value={selectedId}
+              onChange={(e) => setSelectedId(e.target.value)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'white',
+                fontSize: '16px',
+                fontWeight: 600,
+                outline: 'none',
+                cursor: 'pointer',
+                width: '100%',
+              }}
+            >
+              {institutions.map((inst) => (
+                <option key={inst.id} value={inst.id} style={{ background: '#0d1b38' }}>
+                  {inst.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '40px', alignItems: 'start' }}>
-        
-        {/* Left Column: Main Action Area */}
-        <div className="stack">
-          
-          {/* Main Upload Card */}
-          <div 
-            className={`upload-zone ${dragActive ? 'active' : ''} ${loading ? 'loading' : ''}`}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '40px', alignItems: 'start' }}>
+        {/* Left: Upload Area */}
+        <div>
+          {/* Drop Zone */}
+          <div
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
             onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => !loading && fileInputRef.current?.click()}
             style={{
-              height: '450px',
-              border: '2px dashed rgba(201, 168, 76, 0.3)',
-              borderRadius: '32px',
+              height: '420px',
+              border: `2px dashed ${dragActive ? '#e8c96a' : 'rgba(201,168,76,0.3)'}`,
+              borderRadius: '24px',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-              background: dragActive ? 'rgba(201, 168, 76, 0.05)' : 'rgba(255,255,255,0.03)',
-              position: 'relative',
-              overflow: 'hidden',
-              boxShadow: dragActive ? '0 0 40px rgba(201, 168, 76, 0.1)' : 'none'
+              cursor: loading ? 'not-allowed' : 'pointer',
+              transition: 'all 0.3s ease',
+              background: dragActive
+                ? 'rgba(201,168,76,0.07)'
+                : 'rgba(255,255,255,0.02)',
+              boxShadow: dragActive ? '0 0 40px rgba(201,168,76,0.12)' : 'none',
             }}
           >
-            <input 
+            <input
               ref={fileInputRef}
-              type="file" 
-              style={{ display: 'none' }} 
-              onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+              type="file"
+              style={{ display: 'none' }}
+              accept=".pdf,.png,.jpg,.jpeg,.xlsx,.csv"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleFile(file);
+                e.target.value = '';
+              }}
             />
 
             {loading ? (
               <div style={{ textAlign: 'center' }}>
-                <div className="spinner-glow" style={{ position: 'relative', width: '80px', height: '80px', margin: '0 auto 30px' }}>
-                    <div style={{ position: 'absolute', inset: 0, border: '6px solid rgba(79, 172, 254, 0.1)', borderRadius: '50%' }} />
-                    <div style={{ position: 'absolute', inset: 0, border: '6px solid transparent', borderTopColor: '#4facfe', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                </div>
-                <h2 style={{ margin: 0, fontSize: '24px' }}>IA en cours d'analyse...</h2>
-                <p style={{ color: 'var(--text-muted)', marginTop: '10px' }}>Extraction Gemini Vision & Classification</p>
+                <div
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    border: '5px solid rgba(201,168,76,0.2)',
+                    borderTopColor: '#e8c96a',
+                    borderRadius: '50%',
+                    animation: 'spin 0.8s linear infinite',
+                    margin: '0 auto 24px',
+                  }}
+                />
+                <h2
+                  style={{
+                    fontFamily: "'Fraunces', serif",
+                    fontSize: '22px',
+                    color: '#111827',
+                    margin: '0 0 8px',
+                  }}
+                >
+                  AI is analysing…
+                </h2>
+                <p style={{ color: '#9ca3af', margin: 0, fontSize: '14px' }}>
+                  Extracting data with Gemini Vision
+                </p>
               </div>
             ) : (
               <>
-                <div className="icon-box" style={{ fontSize: '80px', marginBottom: '25px', filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.2))' }}>📂</div>
-                <h2 style={{ fontSize: '28px', marginBottom: '12px' }}>Glissez votre document</h2>
-                <p style={{ color: 'var(--text-muted)', textAlign: 'center', maxWidth: '400px', fontSize: '1.1rem' }}>
-                  Déposez un scan de facture, un relevé académique ou un certificat RSE.
+                <div style={{ fontSize: '64px', marginBottom: '20px', lineHeight: 1 }}>📂</div>
+                <h2
+                  style={{
+                    fontFamily: "'Fraunces', serif",
+                    fontSize: '24px',
+                    color: '#111827',
+                    margin: '0 0 10px',
+                  }}
+                >
+                  Drop your document here
+                </h2>
+                <p style={{ color: '#6b7280', textAlign: 'center', maxWidth: '360px', margin: '0 0 28px', fontSize: '14px', lineHeight: 1.6 }}>
+                  Supports PDF, PNG/JPG images, Excel (.xlsx) and CSV files.
+                  AI will extract and classify data automatically.
                 </p>
-                <div style={{ marginTop: '40px', padding: '12px 30px', background: 'var(--navy)', color: 'var(--gold-light)', borderRadius: '14px', fontWeight: '700', fontSize: '15px', border: '1px solid var(--gold)' }}>
-                  SÉLECTIONNER UN FICHIER
+                <div
+                  style={{
+                    padding: '12px 28px',
+                    background: '#0d1b38',
+                    color: '#e8c96a',
+                    borderRadius: '12px',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                    fontFamily: "'DM Mono', monospace",
+                    letterSpacing: '0.06em',
+                    border: '1px solid rgba(201,168,76,0.4)',
+                  }}
+                >
+                  SELECT A FILE
                 </div>
+                <p style={{ color: '#9ca3af', fontSize: '11px', marginTop: '12px', fontFamily: "'DM Mono', monospace" }}>
+                  or drag & drop
+                </p>
               </>
             )}
           </div>
 
-          {/* Recent Activity Mock (to fill desktop space) */}
-          <div className="card" style={{ marginTop: '40px', borderRadius: '24px', border: '1px solid rgba(0,0,0,0.05)' }}>
-             <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                 🕒 Historique Récent d'Ingestion
-             </h3>
-             <table className="data-table" style={{ width: '100%' }}>
-                 <thead>
-                     <tr>
-                         <th>Fichier</th>
-                         <th>Module</th>
-                         <th>Date</th>
-                         <th>Statut</th>
-                     </tr>
-                 </thead>
-                 <tbody>
-                     <tr>
-                         <td style={{ fontWeight: '600' }}>Facture_STEG_S1.pdf</td>
-                         <td><span className="badge badge-warning">Environment</span></td>
-                         <td>Aujourd'hui, 10:24</td>
-                         <td style={{ color: 'var(--success)' }}>● Terminé</td>
-                     </tr>
-                     <tr>
-                         <td style={{ fontWeight: '600' }}>Transcript_L3_Informatique.png</td>
-                         <td><span className="badge badge-good">Academic</span></td>
-                         <td>Hier, 16:45</td>
-                         <td style={{ color: 'var(--success)' }}>● Terminé</td>
-                     </tr>
-                 </tbody>
-             </table>
-          </div>
+          {/* Recent Uploads Table */}
+          {uploads.length > 0 && (
+            <div
+              style={{
+                marginTop: '32px',
+                background: 'white',
+                borderRadius: '16px',
+                border: '1px solid rgba(0,0,0,0.08)',
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', margin: 0, color: '#0d1b38' }}>
+                  Recent Uploads
+                </h3>
+              </div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ background: '#f6f2eb' }}>
+                    <th style={{ padding: '12px 20px', textAlign: 'left', color: '#6b7280', fontWeight: 600 }}>File</th>
+                    <th style={{ padding: '12px 20px', textAlign: 'left', color: '#6b7280', fontWeight: 600 }}>Parser</th>
+                    <th style={{ padding: '12px 20px', textAlign: 'left', color: '#6b7280', fontWeight: 600 }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {uploads.map((u, i) => (
+                    <tr key={i} style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+                      <td style={{ padding: '12px 20px', fontWeight: 600 }}>{u.filename}</td>
+                      <td style={{ padding: '12px 20px', color: '#6b7280' }}>{u.parser_name}</td>
+                      <td style={{ padding: '12px 20px' }}>
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            padding: '3px 10px',
+                            borderRadius: '20px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            background: u.status === 'processed' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                            color: u.status === 'processed' ? '#10b981' : '#ef4444',
+                          }}
+                        >
+                          {u.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
-        {/* Right Column: Status & Insights */}
-        <div className="stack">
-            
-            {success ? (
-                <div className="card animate-slide-up" style={{ 
-                    borderRadius: '24px', 
-                    background: 'linear-gradient(180deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.1) 100%)',
-                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                    padding: '30px'
-                }}>
-                    <div style={{ fontSize: '40px', marginBottom: '15px' }}>✨</div>
-                    <h3 style={{ color: '#10b981', fontSize: '22px', marginBottom: '10px' }}>Analyse Terminée</h3>
-                    <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '25px' }}>
-                        Gemini a identifié le document et routé les données vers les modules correspondants.
-                    </p>
-
-                    <div className="result-metric" style={{ marginBottom: '20px' }}>
-                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Classification</div>
-                        <div style={{ fontSize: '20px', fontWeight: '800' }}>{success.module_classification}</div>
-                    </div>
-
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '30px' }}>
-                        {success.module_classification.split(', ').map((mod: string) => (
-                            <div key={mod} style={{ background: 'white', padding: '5px 15px', borderRadius: '10px', fontSize: '12px', fontWeight: '700', border: '1px solid rgba(0,0,0,0.1)' }}>
-                                #{mod.toUpperCase()}
-                            </div>
-                        ))}
-                    </div>
-
-                    <button className="btn btn-primary" style={{ width: '100%', padding: '15px', borderRadius: '15px' }} onClick={() => setSuccess(null)}>
-                        UPLOADER UN AUTRE
-                    </button>
-                </div>
-            ) : error ? (
-                <div className="card" style={{ borderRadius: '24px', border: '1px solid #ef4444', background: 'rgba(239, 68, 68, 0.05)' }}>
-                    <h3 style={{ color: '#ef4444', marginBottom: '15px' }}>Oups ! Échec de l'analyse</h3>
-                    <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '20px' }}>{error}</p>
-                    <button className="btn btn-ghost" onClick={() => setError(null)}>Réessayer</button>
-                </div>
-            ) : (
-                <div className="card glass-panel" style={{ 
-                    borderRadius: '24px', 
-                    padding: '30px', 
-                    background: 'white', 
-                    border: '1px solid rgba(0,0,0,0.05)' 
-                }}>
-                    <h3 style={{ marginBottom: '20px' }}>💡 Guide Intelligent</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <div style={{ display: 'flex', gap: '15px' }}>
-                            <div style={{ width: '30px', height: '30px', background: '#f5e9c4', borderRadius: '8px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>1</div>
-                            <p style={{ fontSize: '13px', lineHeight: '1.5' }}><strong>Vérifiez l'institution :</strong> L'IA associera les KPIs à l'université sélectionnée en haut de page.</p>
-                        </div>
-                        <div style={{ display: 'flex', gap: '15px' }}>
-                            <div style={{ width: '30px', height: '30px', background: '#f5e9c4', borderRadius: '8px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>2</div>
-                            <p style={{ fontSize: '13px', lineHeight: '1.5' }}><strong>Documents multiples :</strong> Vous pouvez uploader des PDF multi-pages ou des photos de factures.</p>
-                        </div>
-                        <div style={{ display: 'flex', gap: '15px' }}>
-                            <div style={{ width: '30px', height: '30px', background: '#f5e9c4', borderRadius: '8px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>3</div>
-                            <p style={{ fontSize: '13px', lineHeight: '1.5' }}><strong>Validation :</strong> Les données extraites apparaissent instantanément sur le dashboard UCAR après l'upload.</p>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            <div className="card" style={{ marginTop: '20px', borderRadius: '24px', background: '#0d1b38', color: 'white', textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', marginBottom: '10px' }}>🤖</div>
-                <div style={{ fontSize: '14px', fontWeight: '600' }}>Propulsé par Gemini 1.5 Pro</div>
-                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '5px' }}>Précision d'extraction de 98.4%</div>
+        {/* Right: Status Panel */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {error && (
+            <div
+              style={{
+                padding: '20px',
+                background: 'rgba(239,68,68,0.06)',
+                border: '1px solid rgba(239,68,68,0.3)',
+                borderRadius: '16px',
+              }}
+            >
+              <div style={{ fontSize: '20px', marginBottom: '8px' }}>❌</div>
+              <h3 style={{ color: '#ef4444', margin: '0 0 8px', fontSize: '16px' }}>Upload failed</h3>
+              <p style={{ color: '#6b7280', margin: '0 0 16px', fontSize: '13px' }}>{error}</p>
+              <button
+                onClick={() => setError(null)}
+                style={{
+                  padding: '8px 16px',
+                  background: 'transparent',
+                  border: '1px solid rgba(239,68,68,0.4)',
+                  borderRadius: '8px',
+                  color: '#ef4444',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                }}
+              >
+                Dismiss
+              </button>
             </div>
+          )}
+
+          {success && (
+            <div
+              style={{
+                padding: '24px',
+                background: 'rgba(16,185,129,0.06)',
+                border: '1px solid rgba(16,185,129,0.3)',
+                borderRadius: '16px',
+              }}
+            >
+              <div style={{ fontSize: '32px', marginBottom: '12px' }}>✨</div>
+              <h3 style={{ color: '#10b981', fontSize: '18px', margin: '0 0 8px', fontFamily: "'Fraunces', serif" }}>
+                Analysis Complete
+              </h3>
+              <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 16px', lineHeight: 1.6 }}>
+                Gemini identified the document and routed data to the relevant modules.
+              </p>
+              {success.module_classification && (
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px', fontFamily: "'DM Mono', monospace" }}>
+                    Classification
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#0d1b38' }}>
+                    {success.module_classification}
+                  </div>
+                </div>
+              )}
+              <button
+                onClick={() => setSuccess(null)}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: '#0d1b38',
+                  color: '#e8c96a',
+                  border: '1px solid rgba(201,168,76,0.4)',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  fontFamily: "'DM Mono', monospace",
+                }}
+              >
+                UPLOAD ANOTHER
+              </button>
+            </div>
+          )}
+
+          {/* Guide */}
+          {!success && !error && (
+            <div
+              style={{
+                padding: '24px',
+                background: 'white',
+                border: '1px solid rgba(0,0,0,0.08)',
+                borderRadius: '16px',
+              }}
+            >
+              <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', margin: '0 0 16px', color: '#0d1b38' }}>
+                💡 Smart Guide
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {[
+                  ['1', 'Select institution', 'The AI will associate extracted KPIs with the selected university.'],
+                  ['2', 'Drop your file', 'PDFs, photos of bills, Excel spreadsheets — all supported.'],
+                  ['3', 'Automatic routing', 'Extracted data appears instantly on the UCAR dashboard.'],
+                ].map(([num, title, desc]) => (
+                  <div key={num} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                    <div
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        background: '#f5e9c4',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        flexShrink: 0,
+                        color: '#0d1b38',
+                      }}
+                    >
+                      {num}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: '#111827', marginBottom: '2px' }}>{title}</div>
+                      <div style={{ fontSize: '12px', color: '#6b7280', lineHeight: 1.5 }}>{desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* AI Badge */}
+          <div
+            style={{
+              padding: '20px',
+              background: '#0d1b38',
+              color: 'white',
+              textAlign: 'center',
+              borderRadius: '16px',
+            }}
+          >
+            <div style={{ fontSize: '22px', marginBottom: '8px' }}>🤖</div>
+            <div style={{ fontSize: '14px', fontWeight: 600 }}>Powered by Gemini Vision</div>
+            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '4px', fontFamily: "'DM Mono', monospace" }}>
+              98.4% extraction accuracy
+            </div>
+          </div>
         </div>
       </div>
 
       <style>{`
-        .upload-zone:hover {
-          border-color: var(--gold) !important;
-          background: rgba(201, 168, 76, 0.05) !important;
-          transform: translateY(-8px);
-          box-shadow: 0 20px 50px rgba(13, 27, 56, 0.1) !important;
-        }
-        .upload-zone.active {
-          border-color: #4facfe !important;
-          background: rgba(79, 172, 254, 0.08) !important;
-        }
-        .icon-box {
-            animation: float 3s ease-in-out infinite;
-        }
-        @keyframes float {
-            0% { transform: translateY(0); }
-            50% { transform: translateY(-15px); }
-            100% { transform: translateY(0); }
-        }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        .animate-fade-in {
-            animation: fadeIn 0.6s ease-out forwards;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .data-table th {
-            font-size: 10px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            padding: 10px;
-        }
-        .data-table td {
-            padding: 15px 10px;
-            font-size: 13px;
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );
