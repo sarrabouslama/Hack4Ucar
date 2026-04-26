@@ -18,5 +18,14 @@ export const compareInstitutions = (indicator: string) =>
   api.get('/api/v1/academic/compare', { params: { indicator } });
 export const submitKpis = (institutionId: string, data: Record<string, unknown>) =>
   api.post('/api/v1/academic/submit', data, { params: { institution_id: institutionId } });
-export const processInstitutionScan = (data: Record<string, unknown>) =>
-  api.post('/api/v1/academic/process-scan', data);
+export const processInstitutionScan = (data: Record<string, unknown>, institutionId?: string) =>
+  api.post('/api/v1/academic/process-scan', data, { params: { institution_id: institutionId } });
+
+export const uploadDocument = (file: File, institutionId: string) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return api.post('/api/v1/documents/upload', formData, {
+    params: { institution_id: institutionId },
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+};
