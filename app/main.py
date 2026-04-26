@@ -9,7 +9,6 @@ from fastapi.staticfiles import StaticFiles
 from app.config import settings
 from app.core.database import db
 from app.modules.documents_ingestion.routes import router as documents_router
-from app.modules.education_research.routes import router as education_router
 from app.modules.finance_partnerships_hr.routes import router as finance_public_router
 from app.modules.finance_partnerships_hr.routes import router as finance_router
 from app.modules.environment_infrastructure.routes import router as environment_router
@@ -37,7 +36,6 @@ app.add_middleware(
 
 # Include routers
 app.include_router(documents_router, prefix="/api/v1/documents", tags=["documents"])
-app.include_router(education_router, prefix="/api/v1/education", tags=["education"])
 app.include_router(finance_router, prefix="/api/v1/finance", tags=["finance"])
 app.include_router(finance_public_router, prefix="/api", tags=["finance-reports"])
 app.include_router(environment_router, prefix="/api/v1/environment", tags=["environment"])

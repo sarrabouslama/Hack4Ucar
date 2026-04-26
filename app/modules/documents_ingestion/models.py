@@ -55,3 +55,29 @@ class UploadDocumentResponse(BaseModel):
 
     document: DocumentResponse
     extraction_preview: Dict[str, Any] = Field(default_factory=dict)
+
+
+class OCRDocumentRequest(BaseModel):
+    institution_id: Optional[str] = None
+    filename: str
+    document_type: str
+    period_label: Optional[str] = None
+    ocr_text: str
+
+
+class OCRExtractionField(BaseModel):
+    name: str
+    value: Any
+    confidence: float
+    source_fragment: Optional[str] = None
+
+
+class OCRExtractionResponse(BaseModel):
+    filename: str
+    document_type: str
+    status: str
+    confidence: float
+    extracted_text_preview: str
+    normalized_fields: List[OCRExtractionField]
+    structured_payload: Dict[str, Any]
+    recommendations: List[str]

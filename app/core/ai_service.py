@@ -19,6 +19,24 @@ class AIService:
         response = await self.model.generate_content_async(prompt)
         return response.text
 
+    async def generate_json(self, prompt: str) -> str:
+        """Generate structured JSON from a prompt."""
+        if not settings.GEMINI_API_KEY:
+            return "{}"
+            
+        try:
+            response = await self.model.generate_content_async(
+                prompt,
+                generation_config=genai.types.GenerationConfig(
+                    response_mime_type="application/json",
+                    temperature=0.1
+                )
+            )
+            return response.text
+        except Exception as e:
+            print(f"Error generating JSON: {e}")
+            return "{}"
+
     async def get_embeddings(self, text: str) -> list[float]:
         """Generate embeddings for a given text."""
         if not settings.GEMINI_API_KEY:

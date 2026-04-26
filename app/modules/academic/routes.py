@@ -202,7 +202,7 @@ def get_own_academic_kpis(
 def get_ucar_dashboard(db: Session = Depends(get_db)):
     """Dashboard consolidé UCAR — agrégats toutes institutions + classement."""
 
-    institutions = db.query(Institution).filter(Institution.is_active == "true").all()
+    institutions = db.query(Institution).filter(Institution.is_active == True).all()
     total = len(institutions)
 
     # Agrégats par indicateur
@@ -286,7 +286,7 @@ def get_at_risk_institutions(
     db: Session = Depends(get_db),
 ):
     """Liste des institutions avec taux d'abandon au-dessus du seuil."""
-    institutions = db.query(Institution).filter(Institution.is_active == "true").all()
+    institutions = db.query(Institution).filter(Institution.is_active == True).all()
     at_risk = []
 
     for inst in institutions:
@@ -498,7 +498,7 @@ def compare_institutions(
     db: Session = Depends(get_db),
 ):
     """Comparaison de toutes les institutions pour un indicateur (vue UCAR)."""
-    institutions = db.query(Institution).filter(Institution.is_active == "true").all()
+    institutions = db.query(Institution).filter(Institution.is_active == True).all()
     result = []
 
     for inst in institutions:

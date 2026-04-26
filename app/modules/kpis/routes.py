@@ -39,7 +39,7 @@ def create_institution(
         region=data.region,
         address=data.address,
         contact_email=data.contact_email,
-        is_active="true"
+        is_active=True
     )
     db.add(institution)
     db.commit()
@@ -55,7 +55,7 @@ def list_institutions(
     """List all institutions"""
     query = db.query(Institution)
     if active_only:
-        query = query.filter(Institution.is_active == "true")
+        query = query.filter(Institution.is_active == True)
     return query.all()
 
 

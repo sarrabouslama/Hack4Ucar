@@ -2,7 +2,7 @@
 Database models for finance, partnerships, and HR
 """
 
-from sqlalchemy import Column, String, Integer, Float, DateTime, Text, Date
+from sqlalchemy import Column, String, Integer, Float, DateTime, Text, Date, Boolean, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
 
@@ -57,6 +57,7 @@ class Ranking(BaseModel):
     """Institution ranking model"""
 
     __tablename__ = "rankings"
+    __table_args__ = {'extend_existing': True}
 
     ranking_organization = Column(String(255), nullable=False)
     rank_year = Column(Integer, nullable=False)
@@ -132,6 +133,7 @@ class EmploymentOutcome(BaseModel):
 class KpiTarget(BaseModel):
     """SMART KPI objectives generated after each report"""
     __tablename__ = "kpi_targets"
+    __table_args__ = {'extend_existing': True}
 
     report_id = Column(String, nullable=False)       # links to financial_reports
     domain = Column(String(100), nullable=False)     # e.g. "budget", "hr", "research"
@@ -161,6 +163,7 @@ class KpiMetric(BaseModel):
     """Generic KPI metric store, including forecast values."""
 
     __tablename__ = "kpi_metrics"
+    __table_args__ = {'extend_existing': True}
 
     institution_id = Column(String(100), nullable=True)
     domain = Column(String(100), nullable=False)

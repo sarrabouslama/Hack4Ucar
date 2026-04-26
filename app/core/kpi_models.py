@@ -7,7 +7,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 
-from sqlalchemy import Column, String, DateTime, Float, Integer, ForeignKey, Text, Enum as SQLEnum
+from sqlalchemy import Column, String, DateTime, Float, Integer, ForeignKey, Text, Enum as SQLEnum, Boolean
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 
@@ -50,6 +50,7 @@ class ALERT_STATUS(str, Enum):
 class Institution(Base):
     """Institution/Affiliated University Model"""
     __tablename__ = "institutions"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(UUID(as_uuid=True), primary_key=True)
     name = Column(String(255), nullable=False)
@@ -58,7 +59,7 @@ class Institution(Base):
     region = Column(String(100))
     address = Column(Text)
     contact_email = Column(String(255))
-    is_active = Column(String(10), default="true")
+    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -71,6 +72,7 @@ class Institution(Base):
 class KPIMetric(Base):
     """Centralized KPI Metric Model"""
     __tablename__ = "kpi_metrics"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(UUID(as_uuid=True), primary_key=True)
     institution_id = Column(UUID(as_uuid=True), ForeignKey("institutions.id"), nullable=False)
@@ -116,6 +118,7 @@ class KPIMetric(Base):
 class KPITarget(Base):
     """KPI Target/Objective Model"""
     __tablename__ = "kpi_targets"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(UUID(as_uuid=True), primary_key=True)
     institution_id = Column(UUID(as_uuid=True), ForeignKey("institutions.id"), nullable=False)
@@ -138,6 +141,7 @@ class KPITarget(Base):
 class KPIPrediction(Base):
     """KPI Predictions from Prophet/ML"""
     __tablename__ = "kpi_predictions"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(UUID(as_uuid=True), primary_key=True)
     kpi_metric_id = Column(UUID(as_uuid=True), ForeignKey("kpi_metrics.id"), nullable=False)
@@ -161,6 +165,7 @@ class KPIPrediction(Base):
 class Alert(Base):
     """Intelligent Alert Model with XAI"""
     __tablename__ = "alerts"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(UUID(as_uuid=True), primary_key=True)
     institution_id = Column(UUID(as_uuid=True), ForeignKey("institutions.id"), nullable=False)
@@ -197,6 +202,7 @@ class Alert(Base):
 class KPIAggregate(Base):
     """Aggregated KPIs for UCAR Central (cross-institution)"""
     __tablename__ = "kpi_aggregates"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(UUID(as_uuid=True), primary_key=True)
     
@@ -222,6 +228,7 @@ class KPIAggregate(Base):
 class Ranking(Base):
     """Gamification Ranking"""
     __tablename__ = "rankings"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(UUID(as_uuid=True), primary_key=True)
     institution_id = Column(UUID(as_uuid=True), ForeignKey("institutions.id"), nullable=False)
@@ -256,6 +263,6 @@ class User(Base):
     role = Column(String(50), nullable=False)  # super_admin, president, director, admin, staff
     space = Column(String(50), nullable=False)  # ucar_central, institution
     
-    is_active = Column(String(10), default="true")
+    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

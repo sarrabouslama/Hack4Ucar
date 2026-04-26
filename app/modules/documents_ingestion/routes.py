@@ -1,7 +1,8 @@
 """API routes for documents ingestion."""
 
+from typing import Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -36,17 +37,21 @@ def _serialize(document) -> DocumentResponse:
 
 
 @router.post("/ocr-extract", response_model=OCRExtractionResponse)
-async def extract_document(payload: OCRDocumentRequest) -> OCRExtractionResponse:
+async def extract_document(payload: OCRDocumentRequest, db: Session = Depends(get_db)) -> OCRExtractionResponse:
     """Normalize scanned-document OCR output into structured ESG data."""
 
-    return documents_service.extract_document_data(payload)
+    return await documents_service.extract_document_data(db, payload)
 
 
 @router.post("/upload", response_model=UploadDocumentResponse)
-async def upload_document(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_document(
+    file: UploadFile = File(...),
+    institution_id: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
+):
     """Upload and process a document."""
 
-    document = await documents_service.upload_and_process(db, file)
+    document = await documents_service.upload_and_process(db, file, institution_id)
     payload = documents_service.deserialize_payload(document)
     return UploadDocumentResponse(
         document=_serialize(document),
@@ -70,6 +75,11 @@ async def get_document(document_id: UUID, db: Session = Depends(get_db)):
     """Fetch one document by id."""
 
     return _serialize(documents_service.get_document(db, document_id))
+    
+@router.post("/documents/{document_id}/route")
+async def route_document(document_id: UUID, institution_id: str, db: Session = Depends(get_db)):
+    """Route an existing document's data to other modules."""
+    return await documents_service.route_existing_document(db, document_id, institution_id)
 
 @router.get("/search", response_model=DocumentListResponse)
 async def search_documents(

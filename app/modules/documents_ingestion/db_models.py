@@ -30,19 +30,8 @@ class Document(BaseModel):
     parser_name = Column(String(100), nullable=True)
     error_message = Column(Text, nullable=True)
     file_path = Column(String(500), nullable=True)
+    module_classification = Column(String(255), nullable=True)
     
-    # We use JSON for embeddings to ensure compatibility without pgvector extension.
-    # To use pgvector: 
-    # 1. Install pgvector on your Postgres server.
-    # 2. Change this to Column(Vector(768)) and import Vector from pgvector.sqlalchemy.
-    embedding = Column(JSON, nullable=True)
-    
-    # TSVector for full-text search (Native to PostgreSQL)
-    search_vector = Column(
-        TSVECTOR,
-        Computed("to_tsvector('french', coalesce(filename, '') || ' ' || coalesce(extracted_text, ''))", persisted=True)
-    )
 
-    __table_args__ = (
-        Index("idx_doc_search_vector", "search_vector", postgresql_using="gin"),
-    )
+    
+

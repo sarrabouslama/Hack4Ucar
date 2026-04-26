@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.celery_app import celery_app
 from app.core.database import SessionLocal
 from app.modules.chatbot_automation.db_models import MailLog
-from app.modules.education_research.db_models import Student
+from app.modules.finance_partnerships_hr.db_models import Budget
 
 
 @celery_app.task(name="app.modules.chatbot_automation.tasks.detect_dropout_anomalies")

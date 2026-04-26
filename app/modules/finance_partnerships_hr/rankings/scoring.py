@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy import func
 
 from app.core.database import SessionLocal
-from app.modules.education_research.db_models import Exam, ResearchIndicator
+from app.modules.kpis.db_models import KPIMetric
 from app.modules.environment_infrastructure.db_models import ESGMetric
 from app.modules.finance_partnerships_hr.db_models import Absenteeism, Budget, Employee, Ranking
 
@@ -35,10 +35,8 @@ def _clamp_score(value: float) -> float:
 
 
 def _compute_academic_score(db_session, institution_id: Optional[str] = None) -> float:
-    avg_score, avg_max = db_session.query(func.avg(Exam.score), func.avg(Exam.max_score)).first()
-    avg_score = _safe_float(avg_score)
-    avg_max = _safe_float(avg_max) or 100.0
-    return _clamp_score((avg_score / avg_max) * 100.0 if avg_max else 0.0)
+    avg_score = _safe_float(db_session.query(func.avg(KPIMetric.value)).filter(func.lower(KPIMetric.indicator).like("%exam%")).scalar())
+    return _clamp_score(avg_score)
 
 
 def _compute_finance_score(db_session, institution_id: Optional[str] = None) -> float:
@@ -65,7 +63,7 @@ def _compute_esg_score(db_session, institution_id: Optional[str] = None) -> floa
 
 
 def _compute_research_score(db_session, institution_id: Optional[str] = None) -> float:
-    avg_research = _safe_float(db_session.query(func.avg(ResearchIndicator.value)).scalar())
+    avg_research = _safe_float(db_session.query(func.avg(KPIMetric.value)).filter(func.lower(KPIMetric.domain) == "research").scalar())
     return _clamp_score(avg_research)
 
 

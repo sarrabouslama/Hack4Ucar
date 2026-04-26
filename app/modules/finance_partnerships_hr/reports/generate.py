@@ -16,7 +16,7 @@ from sqlalchemy import func
 
 from app.config import settings
 from app.core.database import SessionLocal
-from app.modules.education_research.db_models import ResearchIndicator
+from app.modules.kpis.db_models import KPIMetric
 from app.modules.finance_partnerships_hr.db_models import (
     Absenteeism,
     Budget,
@@ -131,27 +131,26 @@ def aggregate_kpis(db_session, period: str) -> Dict[str, Dict[str, Any]]:
     absenteeism_rate = missed_hours / available_hours * 100.0
 
     publications = _safe_float(
-        db_session.query(func.coalesce(func.sum(ResearchIndicator.value), 0.0))
-        .filter(func.lower(ResearchIndicator.metric_name).like("%publication%"))
-        .filter(ResearchIndicator.reporting_date >= start_date)
-        .filter(ResearchIndicator.reporting_date <= end_date)
+        db_session.query(func.coalesce(func.sum(KPIMetric.value), 0.0))
+        .filter(func.lower(KPIMetric.indicator).like("%publication%"))
+        .filter(KPIMetric.reporting_date >= start_date)
+        .filter(KPIMetric.reporting_date <= end_date)
         .scalar()
     )
     research_funding = _safe_float(
-        db_session.query(func.coalesce(func.sum(ResearchIndicator.value), 0.0))
+        db_session.query(func.coalesce(func.sum(KPIMetric.value), 0.0))
         .filter(
-            func.lower(ResearchIndicator.metric_name).like("%fund%")
-            | func.lower(ResearchIndicator.category).like("%fund%")
+            func.lower(KPIMetric.indicator).like("%fund%")
         )
-        .filter(ResearchIndicator.reporting_date >= start_date)
-        .filter(ResearchIndicator.reporting_date <= end_date)
+        .filter(KPIMetric.reporting_date >= start_date)
+        .filter(KPIMetric.reporting_date <= end_date)
         .scalar()
     )
     active_projects = _safe_float(
-        db_session.query(func.coalesce(func.sum(ResearchIndicator.value), 0.0))
-        .filter(func.lower(ResearchIndicator.metric_name).like("%project%"))
-        .filter(ResearchIndicator.reporting_date >= start_date)
-        .filter(ResearchIndicator.reporting_date <= end_date)
+        db_session.query(func.coalesce(func.sum(KPIMetric.value), 0.0))
+        .filter(func.lower(KPIMetric.indicator).like("%project%"))
+        .filter(KPIMetric.reporting_date >= start_date)
+        .filter(KPIMetric.reporting_date <= end_date)
         .scalar()
     )
 

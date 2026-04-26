@@ -10,7 +10,7 @@ import openpyxl
 from sqlalchemy import func
 
 from app.core.database import SessionLocal
-from app.modules.education_research.db_models import ResearchIndicator
+from app.modules.kpis.db_models import KPIMetric
 from app.modules.finance_partnerships_hr.analytics.predictions import get_predictions
 from app.modules.finance_partnerships_hr.db_models import Absenteeism, Budget, Employee
 from app.modules.finance_partnerships_hr.models import BudgetReportInput, HrHeadcountInput, ResearchProjectInput
@@ -94,23 +94,22 @@ class DashboardService:
         created_session = db is not self.db
         try:
             publications = float(
-                db.query(func.sum(ResearchIndicator.value))
-                .filter(func.lower(ResearchIndicator.metric_name).like("%publication%"))
+                db.query(func.sum(KPIMetric.value))
+                .filter(func.lower(KPIMetric.indicator).like("%publication%"))
                 .scalar()
                 or 0.0
             )
             funding = float(
-                db.query(func.sum(ResearchIndicator.value))
+                db.query(func.sum(KPIMetric.value))
                 .filter(
-                    func.lower(ResearchIndicator.metric_name).like("%fund%")
-                    | func.lower(ResearchIndicator.category).like("%fund%")
+                    func.lower(KPIMetric.indicator).like("%fund%")
                 )
                 .scalar()
                 or 0.0
             )
             active_projects = float(
-                db.query(func.sum(ResearchIndicator.value))
-                .filter(func.lower(ResearchIndicator.metric_name).like("%project%"))
+                db.query(func.sum(KPIMetric.value))
+                .filter(func.lower(KPIMetric.indicator).like("%project%"))
                 .scalar()
                 or 0.0
             )
