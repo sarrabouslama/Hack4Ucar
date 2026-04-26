@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { getInstitutions, submitKpis } from '../api/kpiApi';
+import { getInstitutions, processInstitutionScan, submitKpis } from '../api/kpiApi';
 
 export default function InstitutionDashboard() {
   const [institutions, setInstitutions] = useState<any[]>([]);
@@ -35,7 +34,7 @@ export default function InstitutionDashboard() {
     try {
       const parsed = JSON.parse(scanJson);
       // 1. Calculer les taux via l'IA
-      const res = await axios.post('http://localhost:8000/api/v1/academic/process-scan', parsed);
+      const res = await processInstitutionScan(parsed);
       const analysisData = res.data;
       setAnalysis(analysisData);
 
