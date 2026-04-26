@@ -7,6 +7,10 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker
 
+from sqlalchemy import create_engine, text
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Session, sessionmaker
+
 from app.config import settings
 
 # Create engine
@@ -34,6 +38,7 @@ def get_db() -> Generator[Session, None, None]:
 
 class Database:
     """Database connection manager."""
+    """Database connection manager."""
 
     def __init__(self, database_url: str = settings.DATABASE_URL):
         self.database_url = database_url
@@ -45,9 +50,9 @@ class Database:
         try:
             with self.engine.connect() as connection:
                 connection.execute(text("SELECT 1"))
-                print("Database connection successful")
-        except Exception as exc:
-            print(f"Database connection failed: {exc}")
+                print("[OK] Database connection successful")
+        except Exception as e:
+            print(f"[ERROR] Database connection failed: {e}")
             raise
 
     async def disconnect(self) -> None:

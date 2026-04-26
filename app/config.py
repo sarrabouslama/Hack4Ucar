@@ -2,9 +2,9 @@
 
 from typing import Any, List
 
+from pydantic import Field, field_validator
 from dotenv import load_dotenv
-from pydantic import field_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 load_dotenv()
 
@@ -12,13 +12,17 @@ load_dotenv()
 class Settings(BaseSettings):
     """Application settings loaded from .env"""
 
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
+
     # App settings
-    APP_NAME: str
-    DEBUG: bool
-    VERSION: str
+    APP_NAME: str = "Hack4Ucar AI Modules"
+    DEBUG: bool = False
+    VERSION: str = "0.1.0"
 
     # CORS settings
-    CORS_ORIGINS: List[str]
+    CORS_ORIGINS: List[str] = Field(
+        default_factory=lambda: ["http://localhost:3000", "http://localhost:8000"]
+    )
 
     # Database settings - PostgreSQL
     DATABASE_URL: str
@@ -45,10 +49,6 @@ class Settings(BaseSettings):
             if normalized in {"0", "false", "no", "off", "release", "production"}:
                 return False
         return bool(value)
-
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
 
     @classmethod
     def from_env(cls):
