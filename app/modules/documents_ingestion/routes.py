@@ -1,17 +1,16 @@
-"""
-API routes for documents ingestion
-"""
+"""API routes for documents ingestion."""
 
 
 from uuid import UUID
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
-from app.config import settings
 from app.core.database import get_db
 from app.modules.documents_ingestion.models import (
     DocumentListResponse,
     DocumentResponse,
+    OCRDocumentRequest,
+    OCRExtractionResponse,
     UploadDocumentResponse,
 )
 from app.modules.documents_ingestion.services import documents_service
@@ -35,6 +34,13 @@ def _serialize(document) -> DocumentResponse:
         created_at=document.created_at,
         updated_at=document.updated_at,
     )
+
+
+@router.post("/ocr-extract", response_model=OCRExtractionResponse)
+async def extract_document(payload: OCRDocumentRequest) -> OCRExtractionResponse:
+    """Normalize scanned-document OCR output into structured ESG data."""
+
+    return documents_service.extract_document_data(payload)
 
 
 @router.post("/upload", response_model=UploadDocumentResponse)

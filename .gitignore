@@ -37,3 +37,7 @@ Thumbs.db
 
 # storage
 storage/
+
+# .venv
+.venv/
+.venv_clean/

@@ -9,22 +9,19 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import settings
 
-# Create engine
 engine = create_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
     pool_pre_ping=True,
 )
 
-# Create session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Base class for models
 Base = declarative_base()
 
 
 def get_db() -> Generator[Session, None, None]:
     """Get database session."""
+
     db = SessionLocal()
     try:
         yield db
@@ -41,22 +38,25 @@ class Database:
         self.session_local = SessionLocal
 
     async def connect(self) -> None:
-        """Initialize database connection."""
+        """Initialize database connection"""
+        from sqlalchemy import text
         try:
             with self.engine.connect() as connection:
                 connection.execute(text("SELECT 1"))
-                print("Database connection successful")
-        except Exception as exc:
-            print(f"Database connection failed: {exc}")
+                print("✓ Database connection successful")
+        except Exception as e:
+            print(f"✗ Database connection failed: {e}")
             raise
 
     async def disconnect(self) -> None:
         """Close database connection."""
+
         self.engine.dispose()
 
     def create_tables(self) -> None:
         """Create all tables."""
         self.init_extensions()
+
         self._import_model_modules()
         Base.metadata.create_all(bind=self.engine)
 

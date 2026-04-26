@@ -3,31 +3,32 @@
 from typing import Any, List
 
 from dotenv import load_dotenv
-from pydantic import field_validator
-from pydantic_settings import BaseSettings
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 load_dotenv()
 
 
 class Settings(BaseSettings):
-    """Application settings loaded from .env"""
+    """Application settings loaded from .env."""
 
-    # App settings
-    APP_NAME: str
-    DEBUG: bool
-    VERSION: str
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
-    # CORS settings
-    CORS_ORIGINS: List[str]
+    APP_NAME: str = "Hack4Ucar AI Modules"
+    DEBUG: bool = False
+    VERSION: str = "0.1.0"
 
-    # Database settings - PostgreSQL
-    DATABASE_URL: str
+    CORS_ORIGINS: List[str] = Field(
+        default_factory=lambda: ["http://localhost:3000", "http://localhost:8000"]
+    )
 
-    # API settings
-    API_V1_PREFIX: str
+    DATABASE_URL: str = "sqlite:///./hack4ucar.db"
+    SUPABASE_URL: str = ""
+    SUPABASE_KEY: str = ""
+
+    API_V1_PREFIX: str = "/api/v1"
     SKIP_DB_STARTUP: bool = False
 
-    # Gemini settings
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-2.5-flash"
 
@@ -44,26 +45,23 @@ class Settings(BaseSettings):
 
     @field_validator("DEBUG", mode="before")
     @classmethod
-    def normalize_debug(cls, value: Any) -> bool:
-        """Accept common environment-style debug strings."""
+    def normalize_debug_value(cls, value: Any) -> bool:
+        """Accept common string environment values for DEBUG."""
 
         if isinstance(value, bool):
             return value
         if isinstance(value, str):
             normalized = value.strip().lower()
-            if normalized in {"1", "true", "yes", "on", "debug", "development"}:
+            if normalized in {"1", "true", "yes", "on", "debug", "development", "dev"}:
                 return True
-            if normalized in {"0", "false", "no", "off", "release", "production"}:
+            if normalized in {"0", "false", "no", "off", "release", "prod", "production"}:
                 return False
         return bool(value)
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
-
     @classmethod
     def from_env(cls):
-        """Load settings from environment"""
+        """Load settings from environment."""
+
         return cls()
 
 
