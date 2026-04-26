@@ -1,6 +1,4 @@
-"""
-API routes for environment and infrastructure
-"""
+"""API routes for environment and infrastructure."""
 
 from fastapi import APIRouter
 
@@ -13,6 +11,13 @@ from app.modules.environment_infrastructure.models import (
 from app.modules.environment_infrastructure.services import environment_scoring_service
 
 router = APIRouter()
+
+
+@router.get("/health")
+async def environment_health():
+    """Basic health endpoint for the environment module."""
+
+    return {"module": "environment_infrastructure", "status": "ok"}
 
 
 @router.post("/scorecard", response_model=EnvironmentalScorecardResponse)

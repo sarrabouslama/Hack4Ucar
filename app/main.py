@@ -1,9 +1,10 @@
-"""
-FastAPI application entry point
-"""
+"""FastAPI application entry point."""
+
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.core.database import db
@@ -13,14 +14,12 @@ from app.modules.education_research.routes import router as education_router
 from app.modules.environment_infrastructure.routes import router as environment_router
 from app.modules.finance_partnerships_hr.routes import router as finance_router
 
-# Initialize FastAPI app
 app = FastAPI(
     title="Hack4Ucar AI Modules",
     description="Domain-first AI modules for integrated university management",
     version="0.1.0",
 )
 
-# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -29,12 +28,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
 app.include_router(documents_router, prefix="/api/v1/documents", tags=["documents"])
 app.include_router(education_router, prefix="/api/v1/education", tags=["education"])
 app.include_router(finance_router, prefix="/api/v1/finance", tags=["finance"])
 app.include_router(environment_router, prefix="/api/v1/environment", tags=["environment"])
 app.include_router(chatbot_router, prefix="/api/v1/chatbot", tags=["chatbot"])
+
+frontend_path = Path(__file__).parent / "frontend"
+if frontend_path.exists():
+    app.mount("/", StaticFiles(directory=str(frontend_path), html=True), name="frontend")
 
 
 @app.on_event("startup")
@@ -42,10 +44,15 @@ async def startup_event():
     """Initialize database connection on startup."""
 
     try:
+        if settings.SKIP_DB_STARTUP:
+            print("[OK] SKIP_DB_STARTUP enabled, database startup skipped")
+            return
         await db.connect()
+        db.create_documents_table()
+        db.create_chatbot_tables()
         print("[OK] Application startup complete")
-    except Exception as e:
-        print(f"[ERROR] Startup error: {e}")
+    except Exception as exc:
+        print(f"[ERROR] Startup error: {exc}")
         raise
 
 
@@ -55,17 +62,6 @@ async def shutdown_event():
 
     await db.disconnect()
     print("[OK] Application shutdown complete")
-
-
-@app.get("/")
-async def root():
-    """Root endpoint."""
-
-    return {
-        "message": "Welcome to Hack4Ucar AI Modules",
-        "version": "0.1.0",
-        "docs": "/docs",
-    }
 
 
 @app.get("/health")

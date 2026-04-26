@@ -1,14 +1,12 @@
-"""
-API routes for finance, partnerships, and HR
-"""
+"""API routes for finance, partnerships, and HR."""
 
 from fastapi import APIRouter
 
 router = APIRouter()
 
 
-@router.get("/status")
-async def finance_status() -> dict:
-    """Minimal status endpoint for the finance and HR module."""
+@router.get("/health")
+async def finance_hr_health():
+    """Temporary health endpoint until finance and HR routes are implemented."""
 
-    return {"module": "finance_partnerships_hr", "status": "ready"}
+    return {"module": "finance_partnerships_hr", "status": "ok"}

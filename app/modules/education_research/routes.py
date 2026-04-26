@@ -1,14 +1,12 @@
-"""
-API routes for education research
-"""
+"""API routes for education research."""
 
 from fastapi import APIRouter
 
 router = APIRouter()
 
 
-@router.get("/status")
-async def education_status() -> dict:
-    """Minimal status endpoint for the education module."""
+@router.get("/health")
+async def education_health():
+    """Temporary health endpoint until education routes are implemented."""
 
-    return {"module": "education_research", "status": "ready"}
+    return {"module": "education_research", "status": "ok"}
