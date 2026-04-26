@@ -27,6 +27,7 @@ class Settings(BaseSettings):
 
     # API settings
     API_V1_PREFIX: str
+    ANTHROPIC_API_KEY: str = ""
     SKIP_DB_STARTUP: bool = False
 
     GEMINI_API_KEY: str = ""

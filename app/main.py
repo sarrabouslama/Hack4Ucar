@@ -10,6 +10,7 @@ from app.config import settings
 from app.core.database import db
 from app.modules.documents_ingestion.routes import router as documents_router
 from app.modules.education_research.routes import router as education_router
+from app.modules.finance_partnerships_hr.routes import router as finance_public_router
 from app.modules.finance_partnerships_hr.routes import router as finance_router
 from app.modules.environment_infrastructure.routes import router as environment_router
 from app.modules.chatbot_automation.routes import router as chatbot_router
@@ -28,7 +29,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,6 +39,7 @@ app.add_middleware(
 app.include_router(documents_router, prefix="/api/v1/documents", tags=["documents"])
 app.include_router(education_router, prefix="/api/v1/education", tags=["education"])
 app.include_router(finance_router, prefix="/api/v1/finance", tags=["finance"])
+app.include_router(finance_public_router, prefix="/api", tags=["finance-reports"])
 app.include_router(environment_router, prefix="/api/v1/environment", tags=["environment"])
 app.include_router(chatbot_router, prefix="/api/v1/chatbot", tags=["chatbot"])
 app.include_router(kpi_router, tags=["KPIs"])
@@ -49,6 +51,8 @@ if frontend_path.exists():
     app.mount("/", StaticFiles(directory=str(frontend_path), html=True), name="frontend")
 
 
+def dashboard():
+    return FileResponse("dashboard.html")
 @app.on_event("startup")
 async def startup_event():
     """Initialize database connection on startup."""
@@ -63,6 +67,7 @@ async def startup_event():
         print("[OK] Application startup complete")
     except Exception as e:
         print(f"[ERROR] Startup error: {e}")
+        print(f"[ERROR] Startup error: {e}")
         raise
 
 
@@ -72,6 +77,16 @@ async def shutdown_event():
 
     await db.disconnect()
     print("[OK] Application shutdown complete")
+
+
+@app.get("/")
+async def root():
+    """Root endpoint"""
+    return {
+        "message": "Welcome to Hack4Ucar AI Modules",
+        "version": "0.1.0",
+        "docs": "/docs",
+    }
 
 
 @app.get("/health")

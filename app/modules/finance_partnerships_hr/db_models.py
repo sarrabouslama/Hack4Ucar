@@ -46,6 +46,11 @@ class FinancialReport(BaseModel):
     total_expenses = Column(Float, nullable=False)
     net_result = Column(Float, nullable=False)
     report_date = Column(DateTime, default=datetime.utcnow, nullable=False)
+    institution_id = Column(String(100), nullable=True)
+    executive_summary = Column(Text, nullable=True)
+    kpi_snapshot = Column(JSON, nullable=True)
+    pdf_path = Column(String(500), nullable=True)
+    excel_path = Column(String(500), nullable=True)
 
 
 class Ranking(BaseModel):
@@ -58,6 +63,17 @@ class Ranking(BaseModel):
     overall_rank = Column(Integer, nullable=False)
     category = Column(String(100), nullable=False)
     score = Column(Float, nullable=True)
+    institution_id = Column(String(100), nullable=True)
+    institution_name = Column(String(255), nullable=True)
+    composite_score = Column(Float, nullable=True)
+    academic_score = Column(Float, nullable=True)
+    finance_score = Column(Float, nullable=True)
+    hr_score = Column(Float, nullable=True)
+    esg_score = Column(Float, nullable=True)
+    research_score = Column(Float, nullable=True)
+    domain_breakdown = Column(JSON, nullable=True)
+    badges = Column(JSON, nullable=True)
+    scored_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
 class Employee(BaseModel):
@@ -110,3 +126,49 @@ class EmploymentOutcome(BaseModel):
     employment_rate = Column(Float, nullable=False)
     average_salary = Column(Float, nullable=True)
     sector = Column(String(100), nullable=True)
+
+
+
+class KpiTarget(BaseModel):
+    """SMART KPI objectives generated after each report"""
+    __tablename__ = "kpi_targets"
+
+    report_id = Column(String, nullable=False)       # links to financial_reports
+    domain = Column(String(100), nullable=False)     # e.g. "budget", "hr", "research"
+    objective = Column(Text, nullable=False)         # SMART objective text
+    title = Column(String(255), nullable=True)
+    metric = Column(String(255), nullable=True)      # e.g. "reduce absenteeism by 10%"
+    target_value = Column(String(255), nullable=True)
+    deadline = Column(Date, nullable=True)
+    responsible_role = Column(String(255), nullable=True)
+    priority = Column(Integer, default=1)            # 1=highest priority, 5=lowest priority
+    status = Column(String(50), default="pending")   # pending, in_progress, achieved
+    ai_generated = Column(Boolean, default=False, nullable=False)
+
+class Badge(BaseModel):
+    """Badges earned by institutions per KPI domain"""
+    __tablename__ = "badges"
+
+    institution_code = Column(String(100), nullable=False)  # anonymized code
+    domain = Column(String(100), nullable=False)            # e.g. "finance", "hr"
+    badge_name = Column(String(255), nullable=False)        # e.g. "Budget Champion"
+    badge_level = Column(String(50), default="bronze")      # bronze/silver/gold
+    awarded_at = Column(DateTime, default=datetime.utcnow)
+    score = Column(Float, nullable=True)
+
+
+class KpiMetric(BaseModel):
+    """Generic KPI metric store, including forecast values."""
+
+    __tablename__ = "kpi_metrics"
+
+    institution_id = Column(String(100), nullable=True)
+    domain = Column(String(100), nullable=False)
+    indicator = Column(String(100), nullable=False)
+    metric_value = Column(Float, nullable=False)
+    recorded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    is_forecast = Column(Boolean, default=False, nullable=False)
+    forecast_horizon_days = Column(Integer, nullable=True)
+    lower_bound = Column(Float, nullable=True)
+    upper_bound = Column(Float, nullable=True)
+    source = Column(String(100), nullable=True)

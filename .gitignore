@@ -1,4 +1,5 @@
-# Python and dependencies
+.venv/
+frontend/
 __pycache__/
 *.py[cod]
 *$py.class
