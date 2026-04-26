@@ -156,7 +156,7 @@ def seed_institutions(session) -> dict:
             type="institution",
             region=inst_data["region"],
             contact_email=f"contact@{inst_data['code'].lower()}.tn",
-            is_active="true",
+            is_active=True,
         )
         session.add(inst)
         institution_map[inst_data["code"]] = inst

@@ -23,6 +23,7 @@ from app.modules.documents_ingestion.models import (
 )
 from app.modules.documents_ingestion.parsers import CONTENT_TYPE_TO_EXTENSION, PARSERS_BY_EXTENSION, SUPPORTED_EXTENSIONS
 from app.core.ai_service import ai_service
+from app.modules.documents_ingestion.gemini_extractor import get_extractor
 
 ParserFunction = Callable[[Path], ExtractionResult]
 
@@ -43,58 +44,136 @@ class DocumentIngestionService:
         self.storage_root = Path(storage_dir)
         self.storage_root.mkdir(parents=True, exist_ok=True)
 
-    def extract_document_data(self, payload: OCRDocumentRequest) -> OCRExtractionResponse:
-        """Convert OCR text into normalized fields used by the ESG scoring engine."""
-
-        lowered_text = payload.ocr_text.lower()
+    async def extract_document_data(self, db: Session, payload: OCRDocumentRequest) -> OCRExtractionResponse:
+        """Convert OCR text into normalized fields and route them to other modules using Gemini."""
+        
+        # Call the new gemini extractor
+        extractor = get_extractor()
+        gemini_result = extractor.extract_and_classify(payload.ocr_text[:5000])
+        
         normalized_fields: List[OCRExtractionField] = []
-        structured_payload: Dict[str, str | float | int | bool] = {
+        structured_payload: Dict[str, Any] = {
             "institution_id": payload.institution_id,
             "document_type": payload.document_type,
+            "modules": gemini_result.get("modules", [])
         }
+        
+        if payload.institution_id and db:
+            try:
+                institution_uuid = UUID(payload.institution_id)
+                from app.modules.kpis.services import KPIService
+                kpi_service = KPIService(db)
+                
+                for mod_entry in gemini_result.get("modules", []):
+                    module = mod_entry.get("module")
+                    data = mod_entry.get("fields", {})
+                    
+                    if module in ["education_research", "academic"]:
+                        for indicator, value in data.items():
+                            if isinstance(value, (int, float)):
+                                kpi_service.create_kpi(
+                                    institution_id=institution_uuid,
+                                    domain="academic",
+                                    indicator=indicator,
+                                    period="monthly",
+                                    value=float(value),
+                                    unit="count" if "count" in indicator else "%",
+                                    data_source="document_ingestion"
+                                )
+                    elif module == "environment":
+                        if "consumption_value" in data:
+                            utility = data.get("energy_source", "unknown")
+                            kpi_service.create_kpi(
+                                institution_id=institution_uuid,
+                                domain="environment",
+                                indicator=f"consumption_{utility}",
+                                period="monthly",
+                                value=float(data["consumption_value"]),
+                                unit=data.get("consumption_unit", ""),
+                                data_source="document_ingestion"
+                            )
+                        if "carbon_footprint_kg" in data:
+                            kpi_service.create_kpi(
+                                institution_id=institution_uuid,
+                                domain="environment",
+                                indicator="carbon_footprint",
+                                period="monthly",
+                                value=float(data["carbon_footprint_kg"]),
+                                unit="kg",
+                                data_source="document_ingestion",
+                                notes=data.get("emission_type", "")
+                            )
+                    elif module == "finance":
+                        from app.modules.finance_partnerships_hr.services import FormService
+                        from app.modules.finance_partnerships_hr.models import BudgetReportInput
+                        form_service = FormService(db)
+                        budget_input = BudgetReportInput(
+                            department=str(data.get("department", "general")),
+                            fiscal_year=int(data.get("fiscal_year", datetime.utcnow().year)),
+                            allocated_amount=float(data.get("allocated_amount") or data.get("total_revenue") or 0.0),
+                            spent_amount=float(data.get("spent_amount") or data.get("total_expenses") or 0.0),
+                            category=str(data.get("category", "general"))
+                        )
+                        await form_service.submit_budget_report(budget_input)
+                    elif module == "hr":
+                        if "salary" in data:
+                            kpi_service.create_kpi(
+                                institution_id=institution_uuid,
+                                domain="hr",
+                                indicator="average_salary",
+                                period="monthly",
+                                value=float(data["salary"]),
+                                unit="DT",
+                                data_source="document_ingestion",
+                                notes=f"Position: {data.get('position', 'unknown')}"
+                            )
+                    elif module == "partnerships":
+                        if "contract_value" in data:
+                            kpi_service.create_kpi(
+                                institution_id=institution_uuid,
+                                domain="partnerships",
+                                indicator="contract_value",
+                                period="yearly",
+                                value=float(data["contract_value"]),
+                                unit="DT",
+                                data_source="document_ingestion",
+                                notes=f"Partner: {data.get('partner_name', 'unknown')}"
+                            )
+                    elif module == "infrastructure":
+                        if "budget" in data:
+                            kpi_service.create_kpi(
+                                institution_id=institution_uuid,
+                                domain="infrastructure",
+                                indicator="infrastructure_budget",
+                                period="yearly",
+                                value=float(data["budget"]),
+                                unit="DT",
+                                data_source="document_ingestion",
+                                notes=f"Project: {data.get('project_name', 'unknown')}, Status: {data.get('status', 'unknown')}"
+                            )
+            except ValueError as e:
+                print(f"Failed routing document due to value error: {e}")
 
-        amount = self._find_number_before_unit(lowered_text, ["dt", "tnd", "eur", "$"])
-        consumption = self._extract_consumption(payload.document_type, lowered_text)
-        if amount is not None:
-            normalized_fields.append(
-                OCRExtractionField(
-                    name="invoice_amount",
-                    value=amount,
-                    confidence=0.91,
-                    source_fragment="currency amount",
+        for mod_entry in gemini_result.get("modules", []):
+            for key, val in mod_entry.get("fields", {}).items():
+                normalized_fields.append(
+                    OCRExtractionField(
+                        name=f"{mod_entry.get('module')}_{key}",
+                        value=val if isinstance(val, (int, float)) else 0,
+                        confidence=mod_entry.get("confidence", 0.9),
+                        source_fragment="ai_extraction"
+                    )
                 )
-            )
-            structured_payload["invoice_amount"] = amount
-        if consumption is not None:
-            normalized_fields.append(
-                OCRExtractionField(
-                    name="consumption",
-                    value=consumption["value"],
-                    confidence=consumption["confidence"],
-                    source_fragment=consumption["unit"],
-                )
-            )
-            structured_payload["consumption_value"] = consumption["value"]
-            structured_payload["consumption_unit"] = consumption["unit"]
+                
+        status = "processed"
+        confidence = 0.95
+        recommendations = ["Données extraites et intégrées avec succès via l'IA."]
+        
+        if "error" in gemini_result:
+            status = "needs_review"
+            confidence = 0.5
+            recommendations = ["Échec de l'extraction IA. Vérifiez la lisibilité du document."]
 
-        action = self._extract_rse_action(lowered_text)
-        if action:
-            normalized_fields.append(
-                OCRExtractionField(
-                    name="rse_action",
-                    value=action,
-                    confidence=0.85,
-                    source_fragment=action,
-                )
-            )
-            structured_payload["rse_action"] = action
-
-        document_matches = sum(
-            1 for hint in self._DOCUMENT_HINTS.get(payload.document_type, []) if hint in lowered_text
-        )
-        confidence = min(0.55 + 0.1 * len(normalized_fields) + 0.05 * document_matches, 0.99)
-        status = "processed" if normalized_fields else "needs_review"
-        recommendations = self._build_recommendations(payload.document_type, normalized_fields)
         preview = payload.ocr_text[:220]
         if len(payload.ocr_text) > 220:
             preview += "..."
@@ -103,14 +182,14 @@ class DocumentIngestionService:
             filename=payload.filename,
             document_type=payload.document_type,
             status=status,
-            confidence=round(confidence, 2),
+            confidence=confidence,
             extracted_text_preview=preview,
             normalized_fields=normalized_fields,
             structured_payload=structured_payload,
             recommendations=recommendations,
         )
 
-    async def upload_and_process(self, db: Session, file: UploadFile) -> Document:
+    async def upload_and_process(self, db: Session, file: UploadFile, institution_id: Optional[str] = None) -> Document:
         """Store an uploaded file, parse it, and persist the extraction result."""
 
         suffix, parser = self._resolve_parser(file.filename, file.content_type)
@@ -123,22 +202,43 @@ class DocumentIngestionService:
             file_path=str(saved_path),
         )
         db.add(document)
-        db.flush()
+        db.commit()
+        db.refresh(document)
 
         try:
             extraction = self.parse_document(saved_path, parser)
             document.status = DocumentStatus.PROCESSED.value
             document.extracted_text = extraction.text
-            document.extracted_data = json.dumps(self._serialize_extraction(extraction))
             document.parser_name = extraction.metadata.parser
             document.error_message = None
             
-            # Generate embeddings for semantic search
-            if document.extracted_text:
-                try:
-                    document.embedding = await ai_service.get_embeddings(document.extracted_text[:3000])
-                except Exception as e:
-                    print(f"Warning: Could not generate embedding: {e}")
+            parser_data = self._serialize_extraction(extraction)
+            
+            # Always run Gemini extraction and classification (even without institution_id)
+            if extraction.text:
+                payload = OCRDocumentRequest(
+                    institution_id=institution_id,
+                    filename=document.filename,
+                    document_type="unknown",
+                    ocr_text=extraction.text[:5000]
+                )
+                # extract_document_data handles the automated routing if institution_id is set
+                extraction_response = await self.extract_document_data(db, payload)
+                
+                # Set module classification from the detected modules
+                modules = extraction_response.structured_payload.get("modules", [])
+                module_names = ", ".join([m.get("module") for m in modules if m.get("module")])
+                document.module_classification = module_names or "documents_ingestion"
+                
+                # Combine parser results and Gemini intelligence
+                combined_data = {
+                    "parser": parser_data,
+                    "gemini_extraction": extraction_response.structured_payload
+                }
+                document.extracted_data = json.dumps(combined_data)
+            else:
+                document.extracted_data = json.dumps({"parser": parser_data})
+                
         except Exception as exc:
             document.status = DocumentStatus.FAILED.value
             document.parser_name = "failed"
@@ -146,6 +246,8 @@ class DocumentIngestionService:
             document.extracted_text = None
             document.extracted_data = json.dumps(self._build_failure_payload(suffix, exc))
 
+        if document not in db:
+            document = db.merge(document)
         db.commit()
         db.refresh(document)
         return document
@@ -162,6 +264,44 @@ class DocumentIngestionService:
         if not document:
             raise HTTPException(status_code=404, detail="Document not found")
         return document
+
+    async def route_existing_document(self, db: Session, document_id: UUID, institution_id: str) -> Dict[str, Any]:
+        """Route an existing document's extracted data to other modules."""
+        document = self.get_document(db, document_id)
+        
+        if not document.extracted_text:
+            raise HTTPException(status_code=400, detail="Document has no extracted text to route")
+            
+        payload = OCRDocumentRequest(
+            institution_id=institution_id,
+            filename=document.filename,
+            document_type="unknown",
+            ocr_text=document.extracted_text[:5000]
+        )
+        
+        # This will trigger all kpi_service and form_service calls
+        extraction_response = await self.extract_document_data(db, payload)
+        
+        # Update module classification
+        modules = extraction_response.structured_payload.get("modules", [])
+        module_names = ", ".join([m.get("module") for m in modules if m.get("module")])
+        document.module_classification = module_names or "documents_ingestion"
+        
+        # Update document data with the new routing results
+        combined_data = {
+            "parser": self._serialize_extraction(self.parse_document(Path(document.file_path), self._resolve_parser(document.filename, document.content_type)[1])),
+            "gemini_extraction": extraction_response.structured_payload
+        }
+        document.extracted_data = json.dumps(combined_data)
+        if document not in db:
+            document = db.merge(document)
+        db.commit()
+        
+        return {
+            "status": "success",
+            "message": f"Document {document_id} routed to institution {institution_id}",
+            "modules_routed": [m.get("module") for m in extraction_response.structured_payload.get("modules", [])]
+        }
 
     async def hybrid_search(
         self, 

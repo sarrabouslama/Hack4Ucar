@@ -140,7 +140,7 @@ class InstitutionCreate(InstitutionBase):
 
 class InstitutionResponse(InstitutionBase):
     id: UUID
-    is_active: str
+    is_active: bool
     created_at: datetime
 
     class Config:

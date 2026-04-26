@@ -197,7 +197,7 @@ class KPIService:
         """Get summary for UCAR Central dashboard"""
         # Total institutions
         total_institutions = self.db.query(Institution).filter(
-            Institution.is_active == "true"
+            Institution.is_active == True
         ).count()
         
         # KPIs by domain

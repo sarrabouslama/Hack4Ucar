@@ -103,7 +103,6 @@ class Database:
 
         modules = [
             "app.modules.documents_ingestion.db_models",
-            "app.modules.education_research.db_models",
             "app.modules.finance_partnerships_hr.db_models",
             "app.modules.environment_infrastructure.db_models",
             "app.modules.chatbot_automation.db_models",
