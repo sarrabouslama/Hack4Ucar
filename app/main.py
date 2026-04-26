@@ -2,8 +2,10 @@
 FastAPI application entry point
 """
 
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.core.database import db
@@ -36,12 +38,18 @@ app.include_router(finance_router, prefix="/api/v1/finance", tags=["finance"])
 app.include_router(environment_router, prefix="/api/v1/environment", tags=["environment"])
 app.include_router(chatbot_router, prefix="/api/v1/chatbot", tags=["chatbot"])
 
+# Mount static files for frontend
+frontend_path = Path(__file__).parent / "frontend"
+if frontend_path.exists():
+    app.mount("/", StaticFiles(directory=str(frontend_path), html=True), name="frontend")
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize database connection on startup"""
     try:
         await db.connect()
         db.create_documents_table()
+        db.create_chatbot_tables()
         print("Application startup complete")
     except Exception as e:
         print(f"Startup error: {e}")
