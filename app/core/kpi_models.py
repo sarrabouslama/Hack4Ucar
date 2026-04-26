@@ -71,19 +71,19 @@ class Institution(Base):
 
 from app.modules.kpis.db_models import KPIMetric
 
-    def to_dict(self):
-        return {
-            "id": str(self.id),
-            "institution_id": str(self.institution_id),
-            "domain": self.domain.value if self.domain else None,
-            "indicator": self.indicator,
-            "period": self.period.value if self.period else None,
-            "value": self.value,
-            "unit": self.unit,
-            "reporting_date": self.reporting_date.isoformat() if self.reporting_date else None,
-            "data_source": self.data_source,
-            "notes": self.notes
-        }
+def to_dict(self):
+    return {
+        "id": str(self.id),
+        "institution_id": str(self.institution_id),
+        "domain": self.domain.value if self.domain else None,
+        "indicator": self.indicator,
+        "period": self.period.value if self.period else None,
+        "value": self.value,
+        "unit": self.unit,
+        "reporting_date": self.reporting_date.isoformat() if self.reporting_date else None,
+        "data_source": self.data_source,
+        "notes": self.notes
+    }
 
 
 class KPITarget(Base):

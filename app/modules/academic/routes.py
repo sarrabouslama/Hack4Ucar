@@ -26,13 +26,22 @@ from app.modules.academic.models import (
 router = APIRouter(prefix="/api/v1/academic", tags=["Academic AI"])
 
 @router.post("/process-scan")
-def process_document_scan(data: Dict[str, Any], db: Session = Depends(get_db)):
+def process_document_scan(
+    data: Dict[str, Any], 
+    institution_id: Optional[UUID] = Query(None), 
+    db: Session = Depends(get_db)
+):
     """
     Traite un JSON brut issu du scanner et calcule les indicateurs.
+    If institution_id is provided, it persists them using the document_router.
     """
+    from app.shared.document_router import route_scan_json
+    
+    if institution_id:
+        return route_scan_json(db, institution_id, data)
+    
     calculator = KPICalculator()
-    result = calculator.calculate_all(data)
-    return result
+    return calculator.calculate_all(data)
 
 ACADEMIC_INDICATORS = [
     "success_rate", "dropout_rate", "attendance_rate",
