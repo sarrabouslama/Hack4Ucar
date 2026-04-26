@@ -10,6 +10,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600&display=swap"
         rel="stylesheet" />
+    <link rel="stylesheet" href="css/modules.css">
     <style>
         *,
         *::before,
@@ -185,6 +186,43 @@
         .sessions::-webkit-scrollbar-thumb {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 2px;
+        }
+
+        /* Nav links */
+        .nav-links {
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: var(--radius-md);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 13.5px;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .nav-item:hover {
+            color: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .nav-item.active {
+            color: var(--gold-light);
+            background: rgba(201, 168, 76, 0.1);
+        }
+
+        .nav-item svg {
+            width: 16px;
+            height: 16px;
         }
 
         .session-card {
@@ -1044,6 +1082,20 @@
                 New conversation
             </button>
 
+            <div class="nav-links" style="margin-top: 10px;">
+                <a href="index.html" class="nav-item active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Assistant
+                </a>
+                <a href="automation.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    Automation
+                </a>
+                <a href="search.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Search
+                </a>
+            </div>
             <a class="switch-link" href="/institute.html">
                 <span>Institute sustainability console</span>
                 <span>Open</span>
@@ -1080,16 +1132,16 @@
             </div>
 
             <!-- Messages -->
-            <div class="messages" id="messages"></div>
+                <div class="messages" id="messages"></div>
 
             <!-- Input -->
-            <div class="input-area">
+                <div class="input-area">
                 <!-- Document preview above input -->
-                <div id="doc-preview" class="doc-preview"></div>
+                    <div id="doc-preview" class="doc-preview"></div>
                 <input type="file" id="doc-file-input" multiple accept=".pdf,.xlsx,.xls,.csv,.jpg,.jpeg,.png"
                     style="display:none;">
 
-                <div class="input-box">
+                    <div class="input-box">
                     <textarea id="user-input" placeholder="Ask about KPIs, institutions, alerts, reports…" rows="1"
                         autocomplete="off" spellcheck="true"></textarea>
                     <button class="doc-btn" id="doc-upload-btn" title="Upload document (PDF, Excel, CSV, Image)">
@@ -1099,24 +1151,25 @@
                             <polyline points="17 8 12 3 7 8" />
                             <line x1="12" y1="3" x2="12" y2="15" />
                         </svg>
-                    </button>
+                        </button>
                     <button class="send-btn" id="send-btn" title="Send (Enter)">
                         <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round"
                             stroke-linejoin="round">
                             <line x1="22" y1="2" x2="11" y2="13" />
                             <polygon points="22 2 15 22 11 13 2 9 22 2" />
                         </svg>
-                    </button>
-                </div>
-
-                <div class="input-footer">
-                    <div class="domain-chips" id="domain-chips">
-                        <button class="d-chip active" data-domain="">General</button>
-                        <button class="d-chip" data-domain="education">Education</button>
-                        <button class="d-chip" data-domain="finance">Finance</button>
-                        <button class="d-chip" data-domain="environment">Environment</button>
+                        </button>
                     </div>
-                    <span class="input-hint">Enter to send · Shift+Enter for newline</span>
+
+                    <div class="input-footer">
+                        <div class="domain-chips" id="domain-chips">
+                            <button class="d-chip active" data-domain="">General</button>
+                            <button class="d-chip" data-domain="education">Education</button>
+                            <button class="d-chip" data-domain="finance">Finance</button>
+                            <button class="d-chip" data-domain="environment">Environment</button>
+                        </div>
+                        <span class="input-hint">Enter to send · Shift+Enter for newline</span>
+                    </div>
                 </div>
             </div>
 
@@ -1135,6 +1188,9 @@
             messages: {},          // { [sessionId]: [{ role, content, time, suggested_action }] }
             domain: '',            // active domain_context value
             busy: false,
+            currentView: 'chat',
+            mailLogs: [],
+            searchResults: []
         };
 
         // ─── DOM refs ─────────────────────────────────────────────────────────────
@@ -1699,6 +1755,24 @@
             renderDocPreview();
         };
 
+        window.viewDocDetails = function(id) {
+            // For now, just show a toast or open in a new tab if we had a URL
+            toast('Viewing document details...');
+            // In a real app, this would open a modal with the full text or PDF
+        };
+
+        function activateSession(id) {
+            state.activeId = id;
+            localStorage.setItem('unibot_activeSessionId', id);
+            const s = state.sessions.find(x => x.session_id === id);
+            elTitle.textContent = s?.session_name || 'New conversation';
+            elDomPill.textContent = domainLabel(s?.domain_context || state.domain);
+            renderSessions();
+            renderMessages();
+        }
+
+        // The search logic is now in js/search.js and automation logic in js/automation.js
+
         // ─── Bootstrap ────────────────────────────────────────────────────────────
         (async function init() {
             await loadSessions();
@@ -1722,6 +1796,8 @@
             elInput.focus();
         })();
     </script>
+    <script src="js/automation.js"></script>
+    <script src="js/search.js"></script>
 </body>
 
 </html>

@@ -65,7 +65,7 @@ def seed_documents(db_session: Session, count: int = 10) -> None:
         db_session.add(document)
 
     db_session.commit()
-    print(f"✓ Documents seeded ({count})")
+    print(f"[OK] Documents seeded ({count})")
 
 
 def seed_education(db_session: Session, count: int = 20) -> None:
@@ -91,7 +91,7 @@ def seed_all() -> None:
     try:
         # Create all tables
         db.create_tables()
-        print("✓ Database tables created\n")
+        print("[OK] Database tables created\n")
         
         # Seed each domain
         seed_documents(db_session, count=10)
@@ -101,11 +101,11 @@ def seed_all() -> None:
         seed_chatbot(db_session, count=5)
         
         print("\n" + "="*50)
-        print("✓ DATABASE SEEDING COMPLETED")
+        print("[OK] DATABASE SEEDING COMPLETED")
         print("="*50 + "\n")
         
     except Exception as e:
-        print(f"\n✗ Error seeding database: {e}")
+        print(f"\n[ERROR] Error seeding database: {e}")
         db_session.rollback()
         raise
     finally:

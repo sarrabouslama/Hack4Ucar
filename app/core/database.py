@@ -55,9 +55,24 @@ class Database:
 
     def create_tables(self) -> None:
         """Create all tables."""
+        self.init_extensions()
 
         self._import_model_modules()
         Base.metadata.create_all(bind=self.engine)
+
+    def init_extensions(self) -> None:
+        """Initialize database extensions."""
+        try:
+            with self.engine.connect() as connection:
+                # Enable pgvector extension
+                connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+                # Commit is needed for some extensions
+                connection.commit()
+                print("Database extensions initialized successfully")
+        except Exception as exc:
+            print(f"Warning: Could not initialize database extensions: {exc}")
+            # We don't raise here as the user might not have superuser permissions
+            # but pgvector might already be enabled.
 
     def create_documents_table(self) -> None:
         """Create only the documents table for the OCR pipeline."""
