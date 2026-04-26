@@ -1,0 +1,3 @@
+"""
+Report generation compatibility exports.
+"""

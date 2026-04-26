@@ -26,6 +26,7 @@ class Settings(BaseSettings):
 
     # API settings
     API_V1_PREFIX: str
+    ANTHROPIC_API_KEY: str = ""
 
     class Config:
         env_file = ".env"

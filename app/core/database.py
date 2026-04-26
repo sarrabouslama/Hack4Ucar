@@ -2,7 +2,7 @@
 Database configuration and utilities
 """
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from typing import Generator
@@ -45,10 +45,10 @@ class Database:
         # Test connection
         try:
             with self.engine.connect() as connection:
-                connection.execute("SELECT 1")
-                print("✓ Database connection successful")
+                connection.execute(text("SELECT 1"))
+                print("[OK] Database connection successful")
         except Exception as e:
-            print(f"✗ Database connection failed: {e}")
+            print(f"[ERROR] Database connection failed: {e}")
             raise
 
     async def disconnect(self) -> None:
