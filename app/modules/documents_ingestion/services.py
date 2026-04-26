@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -12,11 +13,14 @@ from uuid import UUID, uuid4
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
+from app.modules.documents_ingestion.gemini_extractor import get_extractor
 from app.modules.documents_ingestion.db_models import Document, DocumentStatus
 from app.modules.documents_ingestion.models import ExtractionResult
 from app.modules.documents_ingestion.parsers import CONTENT_TYPE_TO_EXTENSION, PARSERS_BY_EXTENSION, SUPPORTED_EXTENSIONS
 
 ParserFunction = Callable[[Path], ExtractionResult]
+
+logger = logging.getLogger(__name__)
 
 
 class DocumentIngestionService:
@@ -29,7 +33,7 @@ class DocumentIngestionService:
         self.storage_root.mkdir(parents=True, exist_ok=True)
 
     async def upload_and_process(self, db: Session, file: UploadFile) -> Document:
-        """Store an uploaded file, parse it, and persist the extraction result."""
+        """Store an uploaded file, parse it, classify with Gemini, and persist the extraction result."""
 
         suffix, parser = self._resolve_parser(file.filename, file.content_type)
         saved_path, size = await self._save_upload(file, suffix)
@@ -44,18 +48,43 @@ class DocumentIngestionService:
         db.flush()
 
         try:
+            # Step 1: Parse document to extract raw text
             extraction = self.parse_document(saved_path, parser)
             document.status = DocumentStatus.PROCESSED.value
             document.extracted_text = extraction.text
-            document.extracted_data = json.dumps(self._serialize_extraction(extraction))
             document.parser_name = extraction.metadata.parser
             document.error_message = None
+
+            # Step 2: Use Gemini to classify and extract structured data
+            extractor = get_extractor()
+            gemini_result = extractor.extract_and_classify(extraction.text)
+            
+            # Store all matched module names (comma-separated) for filtering
+            modules: list = gemini_result.get("modules", [])
+            module_names = ", ".join(m["module"] for m in modules if m.get("module"))
+            document.module_classification = module_names or "documents_ingestion"
+
+            # Combine parser extraction with Gemini-extracted fields
+            combined_data = {
+                "parser": self._serialize_extraction(extraction),
+                "gemini_extraction": {
+                    "modules": modules,
+                },
+            }
+
+            if "error" in gemini_result:
+                combined_data["gemini_extraction"]["error"] = gemini_result["error"]
+                logger.warning(f"Gemini extraction error for {document.filename}: {gemini_result['error']}")
+            
+            document.extracted_data = json.dumps(combined_data)
+
         except Exception as exc:
             document.status = DocumentStatus.FAILED.value
             document.parser_name = "failed"
             document.error_message = str(exc)
             document.extracted_text = None
             document.extracted_data = json.dumps(self._build_failure_payload(suffix, exc))
+            logger.error(f"Document processing failed: {exc}")
 
         db.commit()
         db.refresh(document)
@@ -65,6 +94,14 @@ class DocumentIngestionService:
         """Return all uploaded documents."""
 
         return db.query(Document).order_by(Document.created_at.desc()).all()
+
+    def list_documents_by_module(self, db: Session, module: str) -> List[Document]:
+        """Return documents classified to a specific module."""
+
+        return db.query(Document).filter(
+            Document.module_classification == module,
+            Document.status == DocumentStatus.PROCESSED.value
+        ).order_by(Document.created_at.desc()).all()
 
     def get_document(self, db: Session, document_id: UUID) -> Document:
         """Return one uploaded document."""

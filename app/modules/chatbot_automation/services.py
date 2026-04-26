@@ -21,11 +21,7 @@ from app.modules.chatbot_automation.models import (
     ChatSessionResponse,
     ChatSessionSummary,
 )
-
-try:
-    import google.generativeai as genai
-except Exception:  # pragma: no cover - optional dependency
-    genai = None
+from app.shared.gemini_client import get_gemini_client
 
 
 UNIBOT_SYSTEM_PROMPT = """You are UniBot, the AI assistant of UCAR (University of Carthage), an intelligent university management platform called UniSmart AI.
@@ -295,25 +291,14 @@ class ChatbotAutomationService:
         return "\n".join(sections)
 
     def _generate_text(self, prompt: str) -> str:
-        if not settings.GEMINI_API_KEY:
-            raise HTTPException(status_code=503, detail="Gemini API is not configured. Add GEMINI_API_KEY to .env.")
-        if genai is None:
-            raise HTTPException(
-                status_code=503,
-                detail="Gemini SDK is not installed. Run: pip install google-generativeai",
-            )
-
-        genai.configure(api_key=settings.GEMINI_API_KEY)
-        model = genai.GenerativeModel(self.model_name)
         full_prompt = f"{UNIBOT_SYSTEM_PROMPT}\n\n{prompt}"
-        response = model.generate_content(
-            full_prompt,
-            generation_config=genai.types.GenerationConfig(temperature=0.2),
-        )
-
-        if response.text:
-            return response.text.strip()
-        raise HTTPException(status_code=502, detail="Gemini returned an empty response.")
+        try:
+            client = get_gemini_client(self.model_name)
+            return client.generate_text(full_prompt, temperature=0.2)
+        except RuntimeError as exc:
+            detail = str(exc)
+            status_code = 502 if "empty response" in detail.lower() else 503
+            raise HTTPException(status_code=status_code, detail=detail) from exc
 
     @staticmethod
     def _context_has_data(context: ChatContext) -> bool:

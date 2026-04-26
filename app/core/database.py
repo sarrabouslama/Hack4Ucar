@@ -3,7 +3,7 @@
 from importlib import import_module
 from typing import Generator
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -66,6 +66,26 @@ class Database:
         from app.modules.documents_ingestion.db_models import Document
 
         Document.__table__.create(bind=self.engine, checkfirst=True)
+        self._ensure_documents_schema()
+
+    def _ensure_documents_schema(self) -> None:
+        """Apply lightweight schema updates for existing documents table."""
+
+        inspector = inspect(self.engine)
+        if "documents" not in inspector.get_table_names():
+            return
+
+        existing_columns = {col["name"] for col in inspector.get_columns("documents")}
+
+        # Added for document-to-module classification.
+        if "module_classification" not in existing_columns:
+            with self.engine.begin() as connection:
+                connection.execute(
+                    text(
+                        "ALTER TABLE documents "
+                        "ADD COLUMN module_classification VARCHAR(100)"
+                    )
+                )
 
     def create_chatbot_tables(self) -> None:
         """Create chatbot tables needed for conversation history."""

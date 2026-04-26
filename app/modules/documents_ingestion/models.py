@@ -42,6 +42,7 @@ class DocumentResponse(BaseModel):
     parser_name: Optional[str] = None
     error_message: Optional[str] = None
     file_path: Optional[str] = None
+    module_classification: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

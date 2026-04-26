@@ -32,6 +32,7 @@ def _serialize(document) -> DocumentResponse:
         parser_name=document.parser_name,
         error_message=document.error_message,
         file_path=document.file_path,
+        module_classification=document.module_classification,
         created_at=document.created_at,
         updated_at=document.updated_at,
     )
@@ -47,7 +48,7 @@ async def upload_document(file: UploadFile = File(...), db: Session = Depends(ge
         document=_serialize(document),
         extraction_preview={
             "text_preview": (document.extracted_text or "")[:500],
-            "metadata": payload.get("metadata", {}),
+            "metadata": payload.get("parser", {}).get("metadata", {}),
         },
     )
 
@@ -57,6 +58,14 @@ async def list_documents(db: Session = Depends(get_db)):
     """List processed documents."""
 
     items = [_serialize(document) for document in documents_service.list_documents(db)]
+    return DocumentListResponse(items=items)
+
+
+@router.get("/documents/by-module/{module}", response_model=DocumentListResponse)
+async def list_documents_by_module(module: str, db: Session = Depends(get_db)):
+    """List documents classified to a specific module."""
+
+    items = [_serialize(document) for document in documents_service.list_documents_by_module(db, module)]
     return DocumentListResponse(items=items)
 
 

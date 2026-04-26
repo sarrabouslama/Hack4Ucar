@@ -29,3 +29,4 @@ class Document(BaseModel):
     parser_name = Column(String(100), nullable=True)
     error_message = Column(Text, nullable=True)
     file_path = Column(String(500), nullable=True)
+    module_classification = Column(String(100), nullable=True)  # finance, education, hr, etc.
