@@ -34,3 +34,10 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# storage
+storage/
+
+# .venv
+.venv/
+.venv_clean/
