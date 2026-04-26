@@ -5,8 +5,9 @@ import Chatbot from './pages/Chatbot';
 import Automation from './pages/Automation';
 import Search from './pages/Search';
 import InstituteConsole from './pages/InstituteConsole';
+import CO2Forest from './pages/CO2Forest';
 
-type View = 'ucar' | 'institution' | 'chatbot' | 'automation' | 'search' | 'institute_console';
+type View = 'ucar' | 'institution' | 'chatbot' | 'automation' | 'search' | 'institute_console' | 'co2_forest';
 type DashboardTab = 'overview' | 'ranking' | 'alerts' | 'predictions';
 
 function App() {
@@ -44,6 +45,10 @@ function App() {
 
     if (view === 'search') {
       return <Search />;
+    }
+
+    if (view === 'co2_forest') {
+      return <CO2Forest />;
     }
 
     return <InstituteConsole />;
@@ -96,6 +101,9 @@ function App() {
           </button>
           <button className={`nav-item ${view === 'institution' ? 'active' : ''}`} onClick={() => setView('institution')}>
             Institution Scan
+          </button>
+          <button className={`nav-item ${view === 'co2_forest' ? 'active' : ''}`} onClick={() => setView('co2_forest')}>
+            CO2 Forest
           </button>
           <div className="nav-group">
             <button
